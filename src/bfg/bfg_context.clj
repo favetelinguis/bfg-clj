@@ -1,5 +1,11 @@
 (ns bfg.bfg_context
+  (:require [clojure.spec.alpha :as s])
   (:import (java.time Duration ZonedDateTime)))
+
+;; SPECS
+(s/def ::signal #{:BUY :SELL nil})
+
+;;; END SPECS
 
 (defn make-bar [market-id time open high low close volume]
   {:id market-id :time time :open open :high high :low low :close close :volume volume})
@@ -9,13 +15,16 @@
   )
 
 (defn add-bar
-  "Check that each bar that is added in front is newer then the old bar"
+  "Check that each bar that is added in front is newer then the old bar
+  This is very sensetive, if we update with a faulty value the barseries in a market will become nil and the
+  trading system should stop  rading!
+  "
   [bar-series bar]
-  (let [is-same-market (= (:id bar) (:id (first (:bars bar-series))))
-        is-empty-bar-series (empty? (:bars bar-series))
+  (let [is-empty-bar-series (empty? (:bars bar-series))
+        is-same-market (= (:id bar) (:id (first (:bars bar-series))))
         is-new-bar-oldest (if is-empty-bar-series false (> (.compareTo (:time bar) (:time (first (:bars bar-series)))) 0))]
-    (when (and is-same-market
-            (or is-empty-bar-series is-new-bar-oldest))
+    (when (or is-empty-bar-series
+            (and is-same-market is-new-bar-oldest))
       (update bar-series :bars conj bar))))
 
 (defn add-bars
@@ -50,8 +59,8 @@
   "Return a decision"
   [bar-series price-update strategy]
   (let [run-fn (fn [signal-key direction]
-                 (some (partial = :BUY)
-                       (apply (juxt (:buy-signal strategy)) [bar-series price-update])))
+                 (some (partial = direction)
+                       ((apply juxt (signal-key strategy)) bar-series price-update)))
         buy (run-fn :buy-signal :BUY)
         sell (run-fn :sell-signal :SELL)]
     (make-decision (:id strategy) buy sell)))
@@ -61,45 +70,52 @@
   (fn [bar-series price-update]
     (let [close-fn (last-price :close)
           sa-fn (sa 2 :close)]
-      (when (> (close-fn bar-series) (sa-fn bar-series)
-               direction)))))
+      (when (> (close-fn bar-series) (sa-fn bar-series))
+        direction))))
+;; TODO how to view this in cursive?
+;; Should return a function and that function returns a signal
+(s/fdef stupid-strategy-1
+        ;:args (s/cat :account-id ::id)
+        :ret ::signal)
 
 (defn stupid-strategy-2
+  "Return signal"
   [direction]
   (fn [bar-series price-update]
     (let [close-fn (last-price :close)
           sa-fn (sa 2 :close)]
-      (when (< (close-fn bar-series) (sa-fn bar-series)
-               direction)))))
-
-(defn example-strategy
-  "Takes a bar series and return a signal"
-  []
- (-> (make-strategy "Example strategy")
-     (update :buy-signal conj (stupid-strategy-1 :BUY))
-     (update :sell-signal conj (stupid-strategy-2 :SELL))))
+      (when (< (close-fn bar-series) (sa-fn bar-series))
+        direction))))
 
 (defn make-account
   [market-id total available]
   {:id market-id :total total :available available})
 
 (defn make-market
+  "TODO make sure args cant be nil"
   [market-id strategies bar-series current-price]
-  {:id market-id :strategies strategies :bar-series bar-series :current-price current-price})
+  {:id market-id
+   :strategies strategies
+   :bar-series bar-series
+   :current-price current-price
+   })
 
 (defn make-context
-  []
+  [position-sizing-strategy]
   {:markets {}
    :accounts {}
    :portfolio nil
+   :position-sizing-strategy position-sizing-strategy
    :decisions nil
+   :delta-portfolio-commands nil
    }
   )
 
-(defn add-to-context [key context m]
-  (update context key assoc (:id m) m))
-(def add-market (partial add-to-context :markets))
-(def add-account (partial add-to-context :accounts))
+;; Prob not needed replaced with update market/account
+;(defn add-to-context [key context m]
+;  (update context key assoc (:id m) m))
+;(def add-market (partial add-to-context :markets))
+;(def add-account (partial add-to-context :accounts))
 
 (defn update-account
   [old-account update]
@@ -117,20 +133,27 @@
     (assoc context :decisions (map
                               (partial run-strategy market-bar-series price-update) market-strategies))))
 
-(defmulti update :type)
-(defmethod update :account [update last-context]
-  (update-in last-context [:accounts (:id update)] update-account update))
-(defmethod update :price [update last-context]
-  (->
-    (update-in last-context [:markets (:id update)] update-market update)
-    (update-decisions update)))
-(defmethod update :bar [update last-context]
-  (update-in last-context [:markets (:id update) :bar-series] add-bar update))
-(defmethod update :default [_ _] nil)
+(defn update-delta-portfolio-commands
+  [context]
+  (assoc context :delta-portfolio-commands (apply
+                                              (:position-sizing-strategy context)
+                                              ((juxt :portfolio :accounts :decisions) context))))
 
-(defn example-position-sizing-strategy
-  "TODO implement custom position sizing strategies"
-  [account decisions])
+(defmulti update (fn [last-context [action update]] action))
+(defmethod update :market [last-context [_ update]]
+  (update-in last-context [:markets (:id update)] update-market update))
+(defmethod update :account [last-context [_ update]]
+  (update-in last-context [:accounts (:id update)] update-account update))
+;; TODO how to handle adding a bar if the market dont exist
+(defmethod update :bar [last-context [_ bar-update]]
+  (update-in last-context [:markets (:id bar-update) :bar-series] add-bar bar-update))
+(defmethod update :price [last-context [_ price-update]]
+  (->
+    (update-in last-context [:markets (:id price-update)] update-market price-update)
+    (update-decisions price-update)
+    update-delta-portfolio-commands))
+(defmethod update :default [last-context _] last-context)
+
 ;; Pure BFG-CORE
 ;; Pure BFG-IG Handle Order FSM Market FSM
 ;; Impure BFG-IG Lighstreamer connection
