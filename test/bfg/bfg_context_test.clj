@@ -6,7 +6,7 @@
 
 (defn test-position-sizing-strategy
   [portfolio accounts decisions]
-  ["TODO Return list delta-portfolio-commands"])
+  (list (bfg.portfolio/make-order :test-order-id :account :mid 22 :BUY 22.11 23.2) ))
 
 (def bar1
   (let [now (Instant/now)
@@ -40,10 +40,10 @@
 (def test-price-update {:id :DAX :price 22.1})
 
 (def test-market
-  (sut/make-market :DAX (list test-strategy) test-series 33.2))
+  (sut/make-market :DAX (list test-strategy) test-series 33.2 :EUR))
 
 (def test-account
-  (sut/make-account :DAX 11.11 22.12))
+  (sut/make-account :DAX 11.11 22.12 :EUR))
 
 (def test-context
   (-> (sut/make-context test-position-sizing-strategy)
@@ -82,28 +82,27 @@
 
 (deftest run-strategy-test
   (is (= {:buy nil
-          :id   "Example strategy"
+          :market-id   :DAX
+          :strategy-name   "Example strategy"
           :sell true}
          (sut/run-strategy test-series test-price-update test-strategy))))
 
 (deftest simple-context-update-test
   (is (= 2 (count (:markets (-> (sut/make-context test-position-sizing-strategy)
                                 (sut/update [:market test-market])
-                                (sut/update [:market (sut/make-market :SAX (list test-strategy) test-series 33.2)]))))))
+                                (sut/update [:market (sut/make-market :SAX (list test-strategy) test-series 33.2 :EUR)]))))))
   (is (= 1 (count (:accounts (-> (sut/make-context test-position-sizing-strategy)
-                              (sut/update [:account (sut/make-account :DAX 333.33 33.2)]))))))
+                              (sut/update [:account (sut/make-account :DAX 333.33 33.2 :EUR)]))))))
   (is (= 0 (count (:accounts (-> (sut/make-context test-position-sizing-strategy)
-                                 (sut/update [:invalid (sut/make-account :DAX 333.33 33.2)]))))))
+                                 (sut/update [:invalid (sut/make-account :DAX 333.33 33.2 :EUR)]))))))
   (is (= 3 (count (get-in (-> (sut/make-context test-position-sizing-strategy)
                               (sut/update [:market test-market])
                               (sut/update [:bar bar3])) [:markets :DAX :bar-series :bars]))))
   )
 
-;; TODO need to be able to update portfolio
-;; How to model portfolio with orders and positions?
-;; Test update-decisions seems not working
-;;
 ;; strategy -> decisions -> delta-portfolio-commands
 (deftest price-update-test
-  (is (= 1 (-> test-context
-               (sut/update [:price {:id :DAX :price 22.2}])))))
+  (let [result-context (-> test-context
+                           (sut/update [:price {:id :DAX :price 22.2}]))]
+    (is (= 1 (count (:delta-portfolio-commands result-context))))
+    (is (= 1 (count (:signals result-context))))))

@@ -24,7 +24,7 @@
         is-same-market (= (:id bar) (:id (first (:bars bar-series))))
         is-new-bar-oldest (if is-empty-bar-series false (> (.compareTo (:time bar) (:time (first (:bars bar-series)))) 0))]
     (when (or is-empty-bar-series
-            (and is-same-market is-new-bar-oldest))
+              (and is-same-market is-new-bar-oldest))
       (update bar-series :bars conj bar))))
 
 (defn add-bars
@@ -45,14 +45,14 @@
     (when (>= (count (:bars bar-series)) periods)
       (reduce + 0 (map price-key (take periods (:bars bar-series)))))))
 
-(defn make-decision
-  [id buy sell]
-  {:id id :buy buy :sell sell})
+(defn make-signal
+  [market-id strategy-name buy sell]
+  {:market-id market-id :strategy-name strategy-name :buy buy :sell sell})
 
 (defn make-strategy
   [name]
-  {:id name
-   :buy-signal '()
+  {:id          name
+   :buy-signal  '()
    :sell-signal '()})
 
 (defn run-strategy
@@ -63,7 +63,7 @@
                        ((apply juxt (signal-key strategy)) bar-series price-update)))
         buy (run-fn :buy-signal :BUY)
         sell (run-fn :sell-signal :SELL)]
-    (make-decision (:id strategy) buy sell)))
+    (make-signal (:id price-update) (:id strategy) buy sell)))
 
 (defn stupid-strategy-1
   [direction]
@@ -88,34 +88,28 @@
         direction))))
 
 (defn make-account
-  [market-id total available]
+  [market-id total available currency]
   {:id market-id :total total :available available})
 
 (defn make-market
   "TODO make sure args cant be nil"
-  [market-id strategies bar-series current-price]
-  {:id market-id
-   :strategies strategies
-   :bar-series bar-series
+  [market-id strategies bar-series current-price currency]
+  {:id            market-id
+   :strategies    strategies
+   :bar-series    bar-series
    :current-price current-price
    })
 
 (defn make-context
   [position-sizing-strategy]
-  {:markets {}
-   :accounts {}
-   :portfolio nil
+  {:markets                  {}
+   :accounts                 {}
+   :portfolio                (bfg.portfolio/make-portfolio)
    :position-sizing-strategy position-sizing-strategy
-   :decisions nil
+   :signals                nil
    :delta-portfolio-commands nil
    }
   )
-
-;; Prob not needed replaced with update market/account
-;(defn add-to-context [key context m]
-;  (update context key assoc (:id m) m))
-;(def add-market (partial add-to-context :markets))
-;(def add-account (partial add-to-context :accounts))
 
 (defn update-account
   [old-account update]
@@ -125,19 +119,19 @@
   [old-account update]
   (merge old-account update))
 
-(defn update-decisions
+(defn update-signals
   ""
   [context price-update]
-  (let [market-bar-series (get-in context [:bar-series (:id price-update)])
-        market-strategies (get-in context [:market (:id price-update) :strategies])]
-    (assoc context :decisions (map
-                              (partial run-strategy market-bar-series price-update) market-strategies))))
+  (let [market-bar-series (get-in context [:markets (:id price-update) :bar-series])
+        market-strategies (get-in context [:markets (:id price-update) :strategies])]
+    (assoc context :signals (map
+                                (partial run-strategy market-bar-series price-update) market-strategies))))
 
 (defn update-delta-portfolio-commands
   [context]
   (assoc context :delta-portfolio-commands (apply
-                                              (:position-sizing-strategy context)
-                                              ((juxt :portfolio :accounts :decisions) context))))
+                                             (:position-sizing-strategy context)
+                                             ((juxt :portfolio :accounts :signals) context))))
 
 (defmulti update (fn [last-context [action update]] action))
 (defmethod update :market [last-context [_ update]]
@@ -150,7 +144,7 @@
 (defmethod update :price [last-context [_ price-update]]
   (->
     (update-in last-context [:markets (:id price-update)] update-market price-update)
-    (update-decisions price-update)
+    (update-signals price-update)
     update-delta-portfolio-commands))
 (defmethod update :default [last-context _] last-context)
 
@@ -158,8 +152,6 @@
 ;; Pure BFG-IG Handle Order FSM Market FSM
 ;; Impure BFG-IG Lighstreamer connection
 ;; Main metod IMPL
-;; Impure
-;;; Placed in non pure core
 ;(def context (atom {:context {} :decisions []}))
 ;(defn run!
 ;  [market-update]
