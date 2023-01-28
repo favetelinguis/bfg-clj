@@ -59,7 +59,7 @@
   (account/make :CFD-DEMO 100000 100000))
 
 (def test-system
-  (system/make-system (position-size/constant-size-strategy 1) test-account))
+  (system/make-system  test-account))
 
 
 

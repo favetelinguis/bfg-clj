@@ -5,6 +5,7 @@
         org.clojure/core.async {:mvn/version "1.6.673"}
         java-http-clj/java-http-clj {:mvn/version "0.4.3"}
         com.lightstreamer/ls-javase-client {:mvn/version "4.3.8"}
+        mount/mount {:mvn/version "0.1.17"}
         }
  :aliases
  {

@@ -4,14 +4,15 @@
     [bfg.market.bar :as bar]
     [bfg.account :as account]
     [bfg.market.market :as market]
+    [bfg.position-size :as position-size]
     ))
 
 (defn make-system
-  [position-sizing-strategy account]
+  [account]
   {::markets         {}
    ::account         account
    ::portfolio        (portfolio/make)
-   ::position-sizing position-sizing-strategy
+   ::position-sizing (position-size/constant-size-strategy 1)
    })
 
 (defn get-account
