@@ -25,15 +25,15 @@
   (partial chart-candle-pattern "1MINUTE"))
 
 (defn create-connection-and-subscriptions!
-  [{:keys [identifier cst token ls-endpoint]} callback]
-  (let [password (str "CST-" cst "|XST-" token)
-        connection-listener (client-listener-adapter/create callback)]
-    (doto
-      (LightstreamerClient. ls-endpoint nil)
-      (. (-connectionDetails) .setPassword password)
-      (. (-connectionDetails) .setUser identifier)
-      ;(.setPassword (.-connectionDetails) password)
-      ;(.setUser (.-connectionDetails) identifier)
+  [auth-context callback]
+  (let [{:keys [identifier cst token ls-endpoint]} (deref auth-context)
+        password (str "CST-" cst "|XST-" token)
+        connection-listener (client-listener-adapter/create callback)
+        client (LightstreamerClient. ls-endpoint nil)]
+    (doto (.-connectionDetails client)
+      (.setPassword password)
+      (.setUser identifier))
+    (doto client
       (.addListener connection-listener)
       (.connect))))
 

@@ -4,8 +4,8 @@
 (defn create [callback]
   (reify
     ClientListener
-    (onListenEnd [this a] (println "onListenEnd"))
-    (onListenStart [this a] (println "onListenStart"))
-    (onServerError [this v1 v2] (println v1 " " v2))
-    (onStatusChange [this status] (println status))
+    (onListenEnd [this a] (callback {:onListenEnd a}))
+    (onListenStart [this a] (callback {:onListenStart a}))
+    (onServerError [this v1 v2] (callback {:onServerError (str v1 v2)}))
+    (onStatusChange [this status] (callback {:onStatusChange status}))
     ))

@@ -1,4 +1,15 @@
-(ns bfg.market.bar)
+(ns bfg.market.bar
+  (:require [clojure.spec.alpha :as s])
+  (:import (java.time Instant)))
+
+(s/def ::price (s/double-in :min 0. :max 100000.0))
+(s/def ::o ::price)
+(s/def ::h ::price)
+(s/def ::l ::price)
+(s/def ::c ::price)
+(s/def ::time inst?)
+(s/def ::bar (s/keys :req-un [::o ::h ::l ::c]))
+(s/def ::bar-series (s/coll-of ::bar))
 
 (defn make [market-id time high low open close]
   {::id market-id :time time :o open :h high :l low :c close})

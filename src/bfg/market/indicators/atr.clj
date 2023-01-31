@@ -1,5 +1,11 @@
 (ns bfg.market.indicators.atr
-  (:require [bfg.market.bar :as bar]))
+  (:require [bfg.market.bar :as bar]
+            [clojure.spec.alpha :as s]))
+
+(s/def ::periods (s/and pos? number?))
+(s/def ::prior-atr (s/double-in :min 0. :max 1000.0))
+(s/def ::prior-bar ::bar/bar)
+(s/def ::atr-state (s/keys :req [::periods ::prior-bar ::prior-atr]))
 
 (defn calculate-tr
   [prior-bar current-bar]
@@ -16,10 +22,10 @@
 (defn make-atr-state
   "
   The length of the bar-series decides the number of periods to use for ATR
+  need to revert order of bar-series when we calculate oldest
   "
   [bar-series]
-  (println bar-series)
-  (let [bars (bar/get-bars bar-series)
+  (let [bars (reverse (bar/get-bars bar-series))
         initial-atr (/
                       (reduce + (map #(apply calculate-tr %) (partition 2 1 (conj bars nil))))
                       (bar/get-periods bar-series)

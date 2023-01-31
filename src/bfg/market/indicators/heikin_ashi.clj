@@ -1,5 +1,9 @@
 (ns bfg.market.indicators.heikin-ashi
-  (:require [bfg.market.bar :as bar]))
+  (:require [bfg.market.bar :as bar]
+            [clojure.spec.alpha :as s]))
+
+(s/def ::previous ::bar/bar)
+(s/def ::state (s/keys :req [::previous]))
 
 (defn- calculate-first-ha-bar
   [current-bar]
@@ -41,8 +45,10 @@
                            (calculate-heikin-ashi-bar (get-previous heikin-ashi-state) current-bar)))
 
 (defn make-heikin-ashi-state
+  "note that bar series is always ordered from newest to oldest so we need to reverse the order
+  when calculating historic values"
   [bar-series]
-  {::previous (reduce calculate-heikin-ashi-bar nil (bar/get-bars bar-series))}
+  {::previous (reduce calculate-heikin-ashi-bar nil (reverse (bar/get-bars bar-series)))}
   )
 
 (defn calculate-bar-direction

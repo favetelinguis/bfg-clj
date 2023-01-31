@@ -1,4 +1,4 @@
-(ns bfg.fsm.ig)
+(ns ig.fsm.ig)
 
 ;; States
 ;;AwaitCreateWorkingOrder

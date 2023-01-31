@@ -1,8 +1,7 @@
-Core
-    Account
-    
-Integration
-    Handle OPU/WOU FSM
+TODO:
 
-GUI
-    Use mount to create all things
+Check config from bfg-java for setting up all subscriptions to ig
+
+
+Run tests with
+clj -X:test

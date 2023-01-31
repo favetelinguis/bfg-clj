@@ -4,7 +4,6 @@
     [bfg.market.market :as market]
     [bfg.market.signal :as signal]
     [bfg.system :as system]
-    [bfg.position-size :as position-size]
     [bfg.market.bar :as bar])
   (:import (java.time ZoneId ZonedDateTime)))
 
@@ -78,7 +77,6 @@
     {:h 15066.1 :l 15011.1 :o 15032.0, :c 15040.0}          ;ons jan 25 16:00
     {:h 15110.1 :l 15036.0 :o 15036.0, :c 15075.2}          ;ons jan 25 17:00
     {:h 15105.1 :l 15055.6 :o 15055.6, :c 15098.6}          ;ons jan 25 18:00
-
     {:h 15137.1 :l 15077.1 :o 15077.1, :c 15115.0}          ;ons jan 25 19:00
     {:h 15145.1 :l 15096.0 :o 15096.0, :c 15131.0}          ;ons jan 25 20:00
     {:h 15147.1 :l 15113.5 :o 15113.5, :c 15141.2}          ;ons jan 25 21:00

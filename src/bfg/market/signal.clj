@@ -1,6 +1,7 @@
 (ns bfg.market.signal
   (:require [bfg.market.indicators.atr :as atr]
-            [bfg.market.indicators.heikin-ashi :as ha]))
+            [bfg.market.indicators.heikin-ashi :as ha]
+            [clojure.spec.alpha :as s]))
 
 (comment "
 WO = Working Order - In market
@@ -15,6 +16,8 @@ Entry: Place a working order at low/high of entry bar. Target=2xATR Stop-Loss=Op
 Close Working Order: If no position is open within 5 bars
 Exit Position: If order not stop-loss hit, or any new bar is formed that points in opposite direction then my wanted.
 ")
+
+(s/def ::count-same-direction (s/and pos? number?))
 
 (defn make
   "

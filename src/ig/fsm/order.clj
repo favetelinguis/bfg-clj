@@ -1,4 +1,4 @@
-(ns ig.order)
+(ns ig.fsm.order)
 
 ;;OrderHandler
 ;;Buy

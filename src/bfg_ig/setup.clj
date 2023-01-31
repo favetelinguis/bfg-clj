@@ -16,4 +16,6 @@
         token (get-in response [:headers "x-security-token"])
         body (json/read-str (:body response))
         ls-endpoint (get body "lightstreamerEndpoint")
-        ] (merge config {:cst cst :token token :ls-endpoint ls-endpoint})))
+        auth-context (merge config {:cst cst :token token :ls-endpoint ls-endpoint})
+        ]
+    auth-context))
