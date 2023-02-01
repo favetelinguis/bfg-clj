@@ -1,10 +1,12 @@
 (ns bfg.data-test
+  (:require [clojure.test :refer :all])
   (:require
     [bfg.account :as account]
     [bfg.market.market :as market]
     [bfg.market.signal :as signal]
     [bfg.system :as system]
-    [bfg.market.bar :as bar])
+    [bfg.market.indicators.time-series :as ts]
+    [bfg.market.indicators.ohlc-series :as ohlc])
   (:import (java.time ZoneId ZonedDateTime)))
 
 (defn- t
@@ -14,9 +16,9 @@
 
 (def dax-bar-series-14
   "This testdata is collected ons jan 25 9:00 as hourly data and forward, however there I will represent it as minute data"
-  (as-> (bar/make-bar-series :DAX) $
-    (apply bar/add-bars $
-      (map-indexed (fn [idx v] (bar/make :DAX (t (+ idx 1)) (:h v) (:l v) (:o v) (:c v)))
+  (as-> (ohlc/make-series) $
+        (apply ohlc/add-ohlc-bar $
+      (map-indexed (fn [idx v] (ohlc/make-bar :DAX (t (+ idx 1)) (:h v) (:l v) (:o v) (:c v)))
                    [{:h 15116.5 :l 15069.0 :o 15089.0, :c 15090.7}
                     {:h 15092.2 :l 14995.7 :o 15090.2 :c 14999.2}
                     {:h 15038.7 :l 14964.2 :o 14998.2 :c 15028.7}
@@ -34,34 +36,31 @@
                     ]))))
 
 ;; The following bars are following from the initial dax bar series and can be used as bar updates
-(def bar-0 (bar/make :DAX (t 15) 15135.0 15130.7 15132.8 15134.9))
-(def bar-1 (bar/make :DAX (t 16) 15159.8 15130.4 15137.2 15155.8))
-(def bar-2 (bar/make :DAX (t 17) 15175.1 15152.8 15156.5 15160.6))
-(def bar-3 (bar/make :DAX (t 18) 15163.1 15147.1 15160.1 15158.6))
-(def bar-4 (bar/make :DAX (t 19) 15169.6 15157.1 15158.1 15159.1))
-(def bar-5 (bar/make :DAX (t 20) 15164.6 15157.6 15157.6 15162.1))
-(def bar-6 (bar/make :DAX (t 21) 15168.1 15162.1 15162.6 15168.1))
-(def bar-7 (bar/make :DAX (t 22) 15190.6 15165.6 15167.6 15190.6))
-(def bar-8 (bar/make :DAX (t 23) 15221.6 15180.1 15189.6 15183.6))
+(def bar-0 (ohlc/make-bar :DAX (t 15) 15135.0 15130.7 15132.8 15134.9))
+(def bar-1 (ohlc/make-bar :DAX (t 16) 15159.8 15130.4 15137.2 15155.8))
+(def bar-2 (ohlc/make-bar :DAX (t 17) 15175.1 15152.8 15156.5 15160.6))
+(def bar-3 (ohlc/make-bar :DAX (t 18) 15163.1 15147.1 15160.1 15158.6))
+(def bar-4 (ohlc/make-bar :DAX (t 19) 15169.6 15157.1 15158.1 15159.1))
+(def bar-5 (ohlc/make-bar :DAX (t 20) 15164.6 15157.6 15157.6 15162.1))
+(def bar-6 (ohlc/make-bar :DAX (t 21) 15168.1 15162.1 15162.6 15168.1))
+(def bar-7 (ohlc/make-bar :DAX (t 22) 15190.6 15165.6 15167.6 15190.6))
+(def bar-8 (ohlc/make-bar :DAX (t 23) 15221.6 15180.1 15189.6 15183.6))
 
-(def test-signal
-  (signal/make {
-                       :bar-series dax-bar-series-14
-                       :atr-multiple-setup-target 3
-                       :consecutive-heikin-ashi-bars-trigger 4
-                       }))
+;(def test-signal
+;  (signal/make {
+;                       :bar-series dax-bar-series-14
+;                       :atr-multiple-setup-target 3
+;                       :consecutive-heikin-ashi-bars-trigger 4
+;                       }))
 
-(def test-market
-  (market/make :DAX test-signal))
-
-(def test-account
-  (account/make :CFD-DEMO 100000 100000))
-
-(def test-system
-  (system/make-system  test-account))
-
-
-
+;(def test-market
+;  (market/make :DAX test-signal))
+;
+;(def test-account
+;  (account/make :CFD-DEMO 100000 100000))
+;
+;(def test-system
+;  (system/make-system  test-account))
 
 
 ;; Below are the actual results from 1g for the test data above

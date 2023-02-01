@@ -1,7 +1,9 @@
 (ns bfg.market.market
   (:require
-    [bfg.market.signal :as signal]))
+    [bfg.market.signal :as signal]
+    [clojure.spec.alpha :as s]))
 
+(s/def ::id keyword?)
 (defn make
   [market-id signal]
   {::id     market-id

@@ -1,23 +1,19 @@
-(ns bfg.market.indicators.indicator-test
+(ns bfg.market.indicators.atr-series-test
   (:require [clojure.test :refer :all])
   (:require
-    [bfg.market.bar :as bar]
-    [bfg.market.indicators.heikin-ashi :as ha]
+    [bfg.market.indicators.heikin-ashi-series :as ha]
     [bfg.data-test :as data]
-    [bfg.market.indicators.atr :as atr]))
+    [bfg.market.indicators.atr-series :as atr])
+  (:import (java.time.temporal ChronoUnit)))
 
 (deftest calculate-heikin-ashi-test
   (is (= {:c 15142.575 :h 15161.5 :l 15127.369287109375 :o 15127.369287109375}
-         (ha/get-previous (ha/make-heikin-ashi-state data/dax-bar-series-14))
-         )))
-
-(deftest calculate-heikin-ashi-useing-reductions-test
-  (first (reverse (drop 1 (reductions ha/calculate-heikin-ashi-bar nil (reverse (bar/get-bars data/dax-bar-series-14)))))) (is (= {:c 15142.575 :h 15161.5 :l 15127.369287109375 :o 15127.369287109375}
+         (ha/get-previous (ha/make-heikin-ashi-series data/dax-bar-series-14))
          )))
 
 (deftest atr-test
-  (is (= #:bfg.market.indicators.atr{:periods   14,
-                              :prior-atr 31.550531214683158}
+  (is (= #:bfg.market.indicators.atr-series{:periods 14,
+                                     :prior-atr      31.550531214683158}
          (-> (atr/make-atr-state data/dax-bar-series-14)
              (atr/update-atr data/bar-0)
              (atr/update-atr data/bar-1)
@@ -30,3 +26,5 @@
              (atr/update-atr data/bar-8)
              (select-keys [::atr/periods ::atr/prior-atr])  ;hard to test prior bar due to time
              ))))
+
+

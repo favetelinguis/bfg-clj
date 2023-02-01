@@ -1,6 +1,7 @@
 (ns bfg.market.signal
-  (:require [bfg.market.indicators.atr :as atr]
-            [bfg.market.indicators.heikin-ashi :as ha]
+  (:require [bfg.market.indicators.atr-series :as atr]
+            [bfg.market.indicators.heikin-ashi-series :as ha]
+            [bfg.market.indicators.time-series :as ts]
             [clojure.spec.alpha :as s]))
 
 (comment "
@@ -30,7 +31,7 @@ Exit Position: If order not stop-loss hit, or any new bar is formed that points 
    ::consecutive-heikin-ashi-bars-trigger consecutive-heikin-ashi-bars-trigger
    ::atr-multiple-setup-target            atr-multiple-setup-target
    ::atr-state                            (atr/make-atr-state bar-series)
-   ::heikin-ashi-state                    (ha/make-heikin-ashi-state bar-series)
+   ::heikin-ashi-state                    (ha/make-heikin-ashi-series bar-series)
    ::strategy-state                       {
                                            ::count-same-direction 0
                                            ::first-atr            nil ;; atr at first bar
@@ -124,9 +125,9 @@ Exit Position: If order not stop-loss hit, or any new bar is formed that points 
   (let [previous-atr (atr/get-prior-atr (get-atr-state s))
         current-atr-state (atr/update-atr (get-atr-state s) current-bar)
         previous-ha-state (get-heikin-ashi-state s)
-        current-ha-state (ha/step-heikin-ashi-state previous-ha-state current-bar)
+        current-ha-state (ha/add-heikin-ashi-bar previous-ha-state current-bar)
         new-count (if (= (ha/calculate-bar-direction
-                           (ha/get-previous previous-ha-state)) (ha/calculate-bar-direction (ha/get-previous current-ha-state)))
+                           (ts/num-periods previous-ha-state)) (ha/calculate-bar-direction (ts/newest current-ha-state)))
                     (inc (get-count-same-direction s))
                     1)
         test-setup-rules #(and (>= (:h current-bar) (get-target-price %))
@@ -136,7 +137,7 @@ Exit Position: If order not stop-loss hit, or any new bar is formed that points 
           (update-heikin-ashi-state $ current-ha-state)
           (update-atr-state $ current-atr-state)
           (update-first $ (if (= new-count 1)
-                            (ha/get-previous previous-ha-state)
+                            (ts/newest previous-ha-state)
                             (get-first $)))
           (update-first-atr $ (if (= new-count 1)
                                 previous-atr
@@ -148,9 +149,9 @@ Exit Position: If order not stop-loss hit, or any new bar is formed that points 
 
 (defmethod step-signal :await-entry [s current-bar]
   (let [previous-ha-state (get-heikin-ashi-state s)
-        current-ha-state (ha/step-heikin-ashi-state previous-ha-state current-bar)
+        current-ha-state (ha/add-heikin-ashi-bar previous-ha-state current-bar)
         current-atr-state (atr/update-atr (get-atr-state s) current-bar)
-        new-count (if (= (ha/calculate-bar-direction (ha/get-previous previous-ha-state)) (ha/calculate-bar-direction (ha/get-previous current-ha-state)))
+        new-count (if (= (ha/calculate-bar-direction (ts/newest previous-ha-state)) (ha/calculate-bar-direction (ts/newest current-ha-state)))
                     (inc (get-count-same-direction s))
                     1)
         test-entry-rules #(= new-count 1)]
@@ -159,10 +160,10 @@ Exit Position: If order not stop-loss hit, or any new bar is formed that points 
           (update-heikin-ashi-state $ current-ha-state)
           (update-atr-state $ current-atr-state)
           (update-last $ (if (test-entry-rules)
-                           (ha/get-previous previous-ha-state)
+                           (ts/newest previous-ha-state)
                            nil))
           (update-entry $ (if (test-entry-rules)
-                            (ha/get-previous current-ha-state)
+                            (ts/newest current-ha-state)
                             nil))
           (update-state $ (if (test-entry-rules)
                             :await-exit
@@ -171,9 +172,9 @@ Exit Position: If order not stop-loss hit, or any new bar is formed that points 
 
 (defmethod step-signal :await-exit [s current-bar]
   (let [previous-ha-state (get-heikin-ashi-state s)
-        current-ha-state (ha/step-heikin-ashi-state previous-ha-state current-bar)
+        current-ha-state (ha/add-heikin-ashi-bar previous-ha-state current-bar)
         current-atr-state (atr/update-atr (get-atr-state s) current-bar)
-        new-count (if (= (ha/calculate-bar-direction (ha/get-previous previous-ha-state)) (ha/calculate-bar-direction (ha/get-previous current-ha-state)))
+        new-count (if (= (ha/calculate-bar-direction (ts/newest previous-ha-state)) (ha/calculate-bar-direction (ts/newest current-ha-state)))
                     (inc (get-count-same-direction s))
                     1)
         test-exit-rules #(= new-count 1)]

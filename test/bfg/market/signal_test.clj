@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all])
   (:require
     [bfg.data-test :as test-data]
-    [bfg.market.indicators.heikin-ashi :as ha]
+    [bfg.market.indicators.heikin-ashi-series :as ha]
     [bfg.market.signal :as sut]))
 
 (deftest setup-test

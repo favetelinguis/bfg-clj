@@ -1,7 +1,7 @@
 (ns bfg.system
   (:require
     [bfg.portfolio.portfolio :as portfolio]
-    [bfg.market.bar :as bar]
+    [bfg.market.indicators.ohlc-series :as ohlc]
     [bfg.account :as account]
     [bfg.market.market :as market]
     [bfg.position-size :as position-size]
@@ -53,11 +53,11 @@
 
 (defn update-market
   [s bar]
-  (update-in s [::markets (bar/get-market-id bar)] market/update-signal bar))
+  (update-in s [::markets (ohlc/market-id bar)] market/update-signal bar))
 
 (defn step-system
   "Should update signal"
   [s bar]
   (let [new-system (update-market s bar)
-        orders (run-position-sizing new-system (bar/get-market-id bar))]
+        orders (run-position-sizing new-system (ohlc/market-id bar))]
     [new-system orders]))

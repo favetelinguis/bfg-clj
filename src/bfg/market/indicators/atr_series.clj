@@ -1,10 +1,11 @@
-(ns bfg.market.indicators.atr
-  (:require [bfg.market.bar :as bar]
+(ns bfg.market.indicators.atr-series
+  (:require [bfg.market.indicators.time-series :as ts]
+            [bfg.market.indicators.ohlc-series :as ohlc]
             [clojure.spec.alpha :as s]))
 
 (s/def ::periods (s/and pos? number?))
 (s/def ::prior-atr (s/double-in :min 0. :max 1000.0))
-(s/def ::prior-bar ::bar/bar)
+(s/def ::prior-bar ::ohlc/bar)
 (s/def ::atr-state (s/keys :req [::periods ::prior-bar ::prior-atr]))
 
 (defn calculate-tr
@@ -25,12 +26,12 @@
   need to revert order of bar-series when we calculate oldest
   "
   [bar-series]
-  (let [bars (reverse (bar/get-bars bar-series))
+  (let [bars bar-series
         initial-atr (/
                       (reduce + (map #(apply calculate-tr %) (partition 2 1 (conj bars nil))))
-                      (bar/get-periods bar-series)
+                      (ts/num-periods bar-series)
                       )]
-    {::periods   (bar/get-periods bar-series)
+    {::periods   (ts/num-periods bar-series)
      ::prior-atr initial-atr
      ::prior-bar (last bars)}))
 

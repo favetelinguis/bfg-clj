@@ -1,7 +1,7 @@
 (ns bfg.system-test
   (:require [clojure.test :refer :all])
   (:require
-    [bfg.market.bar :as bar]
+    [bfg.market.price_series :as bar]
     [bfg.market.market :as market]
     [bfg.market.signal :as signal]
     [bfg.portfolio.order :as order]
