@@ -1,6 +1,6 @@
-(ns bfg.market.indicators.ohlc-series
+(ns bfg.indicators.ohlc-series
   (:require [clojure.spec.alpha :as s]
-            [bfg.market.indicators.time-series :as ts]
+            [bfg.indicators.time-series :as ts]
             ))
 
 (s/def ::id keyword?)
@@ -18,7 +18,7 @@
 (defn market-id [bar]
   (::id bar))
 
-(def make-series ts/make)
+(def make-empty-series ts/make-empty)
 
 (def add-ohlc-bar (ts/add-indicator-bar (fn [_ bar] bar)))
 

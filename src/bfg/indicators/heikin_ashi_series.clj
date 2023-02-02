@@ -1,5 +1,5 @@
-(ns bfg.market.indicators.heikin-ashi-series
-  (:require [bfg.market.indicators.time-series :as ts]
+(ns bfg.indicators.heikin-ashi-series
+  (:require [bfg.indicators.time-series :as ts]
             [clojure.spec.alpha :as s]))
 
 (s/def ::id keyword?)
@@ -40,12 +40,16 @@
   (merge
     (select-keys current-price-bar [:id :time])                   ; add id and time from original bar
     (if-not (empty? heikin-ashi-series)
-      (calculate-current-ha-bar (ts/newest heikin-ashi-series) current-price-bar)
+      (calculate-current-ha-bar (ts/get-first heikin-ashi-series) current-price-bar)
       (calculate-first-ha-bar current-price-bar))))
 
 (def make-heikin-ashi-series (ts/make-indicator-series calculate-heikin-ashi-bar))
 
-(def add-heikin-ashi-bar (ts/add-indicator-bar calculate-heikin-ashi-bar))
+(def add-heikin-ashi-bar
+  "Takes heking-ashi series and a ohlc-bar and calculate the next hekin-ashi bar ans cons it to series"
+  (ts/add-indicator-bar calculate-heikin-ashi-bar))
+
+(def make-empty-series ts/make-empty)
 
 (defn calculate-bar-direction
   [bar]
@@ -54,3 +58,23 @@
       (> o c) :DOWN
       (< o c) :UP
       :else :NEUTRAL)))
+
+(defn same-direction?
+  [bar1 bar2]
+  (= (calculate-bar-direction bar1) (calculate-bar-direction bar2)))
+
+(defn num-consecutive-same-direction
+  "for empty ha-series return 0 else return 1 or more"
+  [ha-series]
+  (if (empty? ha-series)
+    0
+    (let [num-same (count
+                     (take-while #(apply same-direction? %) (partition 2 1 (map second ha-series))))]
+      (+ 1 num-same))
+    ))
+
+(defn get-first-with-same-direction
+  [ha-series]
+  (let [num-same (num-consecutive-same-direction ha-series)]
+    (second (last (take num-same ha-series))))
+  )

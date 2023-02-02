@@ -2,11 +2,8 @@
   (:require [clojure.test :refer :all])
   (:require
     [bfg.account :as account]
-    [bfg.market.market :as market]
-    [bfg.market.signal :as signal]
-    [bfg.system :as system]
-    [bfg.market.indicators.time-series :as ts]
-    [bfg.market.indicators.ohlc-series :as ohlc])
+    [bfg.indicators.time-series :as ts]
+    [bfg.indicators.ohlc-series :as ohlc])
   (:import (java.time ZoneId ZonedDateTime)))
 
 (defn- t
@@ -16,7 +13,7 @@
 
 (def dax-bar-series-14
   "This testdata is collected ons jan 25 9:00 as hourly data and forward, however there I will represent it as minute data"
-  (as-> (ohlc/make-series) $
+  (as-> (ohlc/make-empty-series) $
         (apply ohlc/add-ohlc-bar $
       (map-indexed (fn [idx v] (ohlc/make-bar :DAX (t (+ idx 1)) (:h v) (:l v) (:o v) (:c v)))
                    [{:h 15116.5 :l 15069.0 :o 15089.0, :c 15090.7}
@@ -35,6 +32,8 @@
                     {:h 15161.5 :l 15129.2 :o 15146.1 :c 15133.5}
                     ]))))
 
+;; Newest bar in dax-bar-series
+(def newest-dax-14 (ohlc/make-bar :DAX (t 14) 15161.5 15129.2 15146.1 15133.5))
 ;; The following bars are following from the initial dax bar series and can be used as bar updates
 (def bar-0 (ohlc/make-bar :DAX (t 15) 15135.0 15130.7 15132.8 15134.9))
 (def bar-1 (ohlc/make-bar :DAX (t 16) 15159.8 15130.4 15137.2 15155.8))

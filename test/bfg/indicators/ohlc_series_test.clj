@@ -1,6 +1,6 @@
-(ns bfg.market.indicators.ohlc-series-test
+(ns bfg.indicators.ohlc-series-test
   (:require [clojure.test :refer :all])
-  (:require [bfg.market.indicators.ohlc-series :as sut])
+  (:require [bfg.indicators.ohlc-series :as sut])
   (:import (java.time Instant)))
 
 (deftest make-price-bar-test

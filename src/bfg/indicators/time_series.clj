@@ -1,4 +1,4 @@
-(ns bfg.market.indicators.time-series
+(ns bfg.indicators.time-series
   (:require [clojure.spec.alpha :as s]))
 
 (s/def ::time inst?)
@@ -11,15 +11,19 @@
   [ts]
   (count ts))
 
-(defn newest
+(defn get-first
   [ts]
   (second (first ts)))
 
-(defn oldest
+(defn get-second
+  [ts]
+  (second (second ts)))
+
+(defn get-last
   [ts]
   (second (last ts)))
 
-(defn make
+(defn make-empty
   "Make sure newest bar is first and oldest last"
   []
   (sorted-map-by (fn [k1 k2] (.compareTo k2 k1))))
@@ -34,7 +38,7 @@
   Bar must contain :id and :time
   "
   [ts & bars]
-  (let [adder (fn [ts bar] (if-let [prior-bar (newest ts)]
+  (let [adder (fn [ts bar] (if-let [prior-bar (get-first ts)]
                              (let [is-same-market (= (:id bar) (:id prior-bar))
                                    is-new-bar-oldest (> (.compareTo (:time bar) (:time prior-bar)) 0)]
                                (when (and is-same-market is-new-bar-oldest)
@@ -48,7 +52,7 @@
   (fn [time-series]
     (reduce
       (fn [agg bar] (add agg (indicator-fn agg bar)))
-      (make)
+      (make-empty)
       (map second (reverse time-series)))))
 
 (defn add-indicator-bar
@@ -60,3 +64,7 @@
       (fn [agg bar] (add agg (indicator-fn agg bar)))
       time-series
       bars)))
+
+(defn get-at
+  [ts instant]
+  (get ts instant))
