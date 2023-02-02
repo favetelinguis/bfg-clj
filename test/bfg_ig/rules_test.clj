@@ -35,70 +35,70 @@
                                 (println :then-finally (:name rule))
                                 (f session))}))))))
 
-;(deftest adding-ohlc-bar-and-series-test
-;  (-> (rules/init-bfg-session)
-;      (o/insert :DAX ::ohlc/bar data/bar-0)
-;      o/fire-rules
-;      ((fn [session]
-;         (is (o/contains? session :DAX ::ohlc/bar))
-;         (is (= 1 (count (o/query-all session ::rules/ohlc-bar))))
-;         (is (= 1 (count (:ohlc-series (first (o/query-all session ::rules/ohlc-series))))))
-;         session))
-;      (o/insert :DAX ::ohlc/bar data/bar-1)
-;      o/fire-rules
-;      (o/insert :DAX ::ohlc/bar data/bar-2)
-;      o/fire-rules
-;      ((fn [session]
-;         (is (= 1 (count (o/query-all session ::rules/ohlc-bar))))
-;         (is (= 3 (count (:ohlc-series (first (o/query-all session ::rules/ohlc-series))))))
-;         session))
-;      ))
-;
-;(deftest atr-series-test
-;  (with-redefs [atr/periods 3]
-;    (-> (rules/init-bfg-session)
-;        (o/insert :DAX ::ohlc/bar data/bar-0)
-;        o/fire-rules
-;        ((fn [session]
-;           (is (not (o/contains? session :DAX ::atr/series)))
-;           session))
-;        (o/insert :DAX ::ohlc/bar data/bar-1)
-;        o/fire-rules
-;        (o/insert :DAX ::ohlc/bar data/bar-2)
-;        o/fire-rules
-;        ((fn [session]
-;           (is (o/contains? session :DAX ::atr/series))
-;           (is (= 1 (count (:atr-series (first (o/query-all session ::rules/atr-series))))))
-;           session))
-;        (o/insert :DAX ::ohlc/bar data/bar-3)
-;        o/fire-rules
-;        ((fn [session]
-;           (is (= 2 (count (:atr-series (first (o/query-all session ::rules/atr-series))))))
-;           session))
-;        )))
-;
-;(deftest ha-series-test
-;  (with-redefs [atr/periods 3]
-;    (-> (rules/init-bfg-session)
-;        (o/insert :DAX ::ohlc/bar data/bar-0)
-;        o/fire-rules
-;        ((fn [session]
-;           (is (o/contains? session :DAX ::ha/series))
-;           (is (empty? (:ha-series (first (o/query-all session ::rules/ha-series)))))
-;           session))
-;        (o/insert :DAX ::ohlc/bar data/bar-1)
-;        o/fire-rules
-;        (o/insert :DAX ::ohlc/bar data/bar-2)
-;        o/fire-rules
-;        ((fn [session]
-;           (is (= 1 (count (:ha-series (first (o/query-all session ::rules/ha-series))))))
-;           session))
-;        (o/insert :DAX ::ohlc/bar data/bar-3)
-;        o/fire-rules
-;        ((fn [session]
-;           (is (= 2 (count (:ha-series (first (o/query-all session ::rules/ha-series))))))
-;           session))
-;        )))
+(deftest adding-ohlc-bar-and-series-test
+  (-> (rules/init-bfg-session rules/rule-set)
+      (o/insert :DAX ::ohlc/bar data/bar-0)
+      o/fire-rules
+      ((fn [session]
+         (is (o/contains? session :DAX ::ohlc/bar))
+         (is (= 1 (count (o/query-all session ::rules/ohlc-bar))))
+         (is (= 1 (count (:ohlc-series (first (o/query-all session ::rules/ohlc-series))))))
+         session))
+      (o/insert :DAX ::ohlc/bar data/bar-1)
+      o/fire-rules
+      (o/insert :DAX ::ohlc/bar data/bar-2)
+      o/fire-rules
+      ((fn [session]
+         (is (= 1 (count (o/query-all session ::rules/ohlc-bar))))
+         (is (= 3 (count (:ohlc-series (first (o/query-all session ::rules/ohlc-series))))))
+         session))
+      ))
+
+(deftest atr-series-test
+  (with-redefs [atr/periods 3]
+    (-> (rules/init-bfg-session rules/rule-set)
+        (o/insert :DAX ::ohlc/bar data/bar-0)
+        o/fire-rules
+        ((fn [session]
+           (is (not (o/contains? session :DAX ::atr/series)))
+           session))
+        (o/insert :DAX ::ohlc/bar data/bar-1)
+        o/fire-rules
+        (o/insert :DAX ::ohlc/bar data/bar-2)
+        o/fire-rules
+        ((fn [session]
+           (is (o/contains? session :DAX ::atr/series))
+           (is (= 1 (count (:atr-series (first (o/query-all session ::rules/atr-series))))))
+           session))
+        (o/insert :DAX ::ohlc/bar data/bar-3)
+        o/fire-rules
+        ((fn [session]
+           (is (= 2 (count (:atr-series (first (o/query-all session ::rules/atr-series))))))
+           session))
+        )))
+
+(deftest ha-series-test
+  (with-redefs [atr/periods 3]
+    (-> (rules/init-bfg-session rules/rule-set)
+        (o/insert :DAX ::ohlc/bar data/bar-0)
+        o/fire-rules
+        ((fn [session]
+           (is (o/contains? session :DAX ::ha/series))
+           (is (empty? (:ha-series (first (o/query-all session ::rules/ha-series)))))
+           session))
+        (o/insert :DAX ::ohlc/bar data/bar-1)
+        o/fire-rules
+        (o/insert :DAX ::ohlc/bar data/bar-2)
+        o/fire-rules
+        ((fn [session]
+           (is (= 1 (count (:ha-series (first (o/query-all session ::rules/ha-series))))))
+           session))
+        (o/insert :DAX ::ohlc/bar data/bar-3)
+        o/fire-rules
+        ((fn [session]
+           (is (= 2 (count (:ha-series (first (o/query-all session ::rules/ha-series))))))
+           session))
+        )))
 
 (def setup-trigger-bar
   (ohlc/make-bar :DAX (Instant/parse "2022-01-25T09:18:00Z") 15855. 15215. 15222. 15777.))

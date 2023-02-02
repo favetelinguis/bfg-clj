@@ -59,7 +59,6 @@
       [market-id ::atr/series atr-series {:then false}]
       [market-id ::ha/series ha-series]
       :when
-      (not (empty? ha-series))
       (signal/setup? current-signal ohlc-series atr-series ha-series)
       :then
       (o/insert! market-id ::signal/signal :await-entry)]

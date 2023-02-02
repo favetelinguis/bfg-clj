@@ -25,7 +25,7 @@ Exit Position: If order not stop-loss hit, or any new bar is formed that points 
 
 (defn setup?
   [current-signal ohlc-series atr-series ha-series]
-  (when (= current-signal :await-setup)
+  (when (and (= current-signal :await-setup) (seq ohlc-series) (seq atr-series) (seq ha-series))
     (let [first-ha-bar (ha/get-first-with-same-direction ha-series)
           atr-at-first (:atr (ts/get-at atr-series (:time first-ha-bar)))
           target-price (+ (* atr-multiple-setup-target atr-at-first)
