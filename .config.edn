@@ -1,4 +1,5 @@
 {:base-url   "https://demo-api.ig.com/gateway/deal"
  :identifier #ENV "IG_IDENTIFER"
  :password   #ENV "IG_PASSWORD"
- :apikey     #ENV "IG_DEMO_APIKEY"}
+ :apikey     #ENV "IG_DEMO_APIKEY"
+ :markets    [{:epic "IX.D.DAX.IFMM.IP"}]}

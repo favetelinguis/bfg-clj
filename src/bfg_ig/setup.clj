@@ -1,6 +1,6 @@
 (ns bfg-ig.setup
   (:require
-    [ig.rest :as rest]
+    [bfg-ig.rest :as rest]
     [clojure.data.json :as json]
     [java-http-clj.core :as http]))
 

@@ -127,3 +127,8 @@
            (is (= :await-entry (:signal (first (o/query-all session ::rules/signal)))))
            session))
         )))
+
+;; test await-entry
+;; new bar same directn
+;; new bar entry bar but not doji
+;; new bar entry so enter

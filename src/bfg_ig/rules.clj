@@ -1,13 +1,13 @@
 (ns bfg-ig.rules
   (:require
     [bfg.indicators.time-series :as ts]
+    [bfg.portfolio.order :as order]
+    [bfg.portfolio.position :as position]
     [bfg.signal :as signal]
     [bfg.indicators.atr-series :as atr]
     [bfg.indicators.ohlc-series :as ohlc]
     [bfg.indicators.heikin-ashi-series :as ha]
     [odoyle.rules :as o]))
-
-
 
 (def rule-set
   "
@@ -52,16 +52,71 @@
       :then
       (o/insert! market-id ::ha/series (ha/add-heikin-ashi-bar ha-series (ts/get-first ohlc-series)))]
 
-     ::check-setup
+     ::setup->entry
      [:what
-      [market-id ::signal/signal current-signal {:then false}]
+      [market-id ::signal/signal :await-setup]
       [market-id ::ohlc/series ohlc-series {:then false}]
       [market-id ::atr/series atr-series {:then false}]
       [market-id ::ha/series ha-series]
       :when
-      (signal/setup? current-signal ohlc-series atr-series ha-series)
+      (signal/setup? ohlc-series atr-series ha-series)
       :then
       (o/insert! market-id ::signal/signal :await-entry)]
+
+     ::entry->wo-confirmation
+     [:what
+      [market-id ::signal/signal :await-entry]
+      [market-id ::ha/series ha-series]
+      :when
+      (signal/entry? ha-series)
+      :then
+      (o/insert! market-id ::signal/signal :await-wo-confirmation)
+      (println "DO PLACE WO execute command ")
+      ]
+
+     ::entry->setup
+     [:what
+      [market-id ::signal/signal :await-entry]
+      [market-id ::ha/series ha-series]
+      :when
+      (signal/cancel-entry? ha-series)
+      :then
+      (o/insert! market-id ::signal/signal :await-setup)
+      ]
+
+     ::wo-confirmation->exit
+     [:what
+      [market-id ::signal/signal :await-wo-confirmation]
+      [market-id ::order/order order]
+      :when
+      (signal/wo-confirmation? order)
+      :then
+      (o/insert! market-id ::signal/signal :await-exit)
+      ]
+
+     ::close-wo->setup
+     [:what
+      [market-id ::signal/signal :await-exit]
+      [market-id ::order/order order]
+      [market-id ::ha/series ha-series]
+      :when
+      (signal/close-wo? order ha-series)
+      :then
+      (o/retract! market-id ::order/order)
+      (o/insert! market-id ::signal/signal :await-setup)
+      ]
+
+     ::exit-position->setup
+     [:what
+      [market-id ::signal/signal :await-exit]
+      [market-id ::position/position position]
+      [market-id ::ha/series ha-series]
+      :when
+      (signal/exit-position? position ha-series)
+      :then
+      (o/retract! market-id ::position/position)
+      (o/insert! market-id ::signal/signal :await-setup)
+      ]
 
      ::signal
      [:what

@@ -1,8 +1,6 @@
 (ns bfg.data-test
   (:require [clojure.test :refer :all])
   (:require
-    [bfg.account :as account]
-    [bfg.indicators.time-series :as ts]
     [bfg.indicators.ohlc-series :as ohlc])
   (:import (java.time ZoneId ZonedDateTime)))
 

@@ -5,7 +5,8 @@
     [bfg.data-test :as data]
     [bfg.indicators.ohlc-series :as ohlc]
     [bfg.indicators.time-series :as ts]
-    ))
+    )
+  (:import (java.time Instant)))
 
 (def ha-series (ha/make-heikin-ashi-series data/dax-bar-series-14))
 
@@ -33,3 +34,8 @@
 (deftest get-first-with-same-direction-test
   (is (= { :c 15034.9 :o 15029.368750000001 :h 15060.4 :l 15018.9}
          (select-keys (ha/get-first-with-same-direction ha-series) [:o :h :l :c]))))
+
+(deftest is-entry-bar-test
+  (is (not (ha/is-entry-bar? data/bar-2)))
+  (is (true? (ha/is-entry-bar? (ohlc/make-bar :DAX (Instant/now)
+                                              200.0 100.0 155.0 150.0)))))

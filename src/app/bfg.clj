@@ -1,9 +1,8 @@
 (ns app.bfg
   (:require
     [mount.core :refer [defstate]]
-    [app.auth-context :as context]
-    [bfg.account :as account]
-    [bfg.system :as bfg]))
+    [bfg-ig.rules :as rules]
+    [odoyle.rules :as o]))
 
 (defstate bfg
-          :start (atom (bfg/make-system (account/make (:account-id context/auth-context) nil nil))))
+          :start (atom (reduce o/add-rule (o/->session) rules/rule-set)))

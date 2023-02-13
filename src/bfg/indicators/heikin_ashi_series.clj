@@ -8,6 +8,7 @@
 (s/def ::h ::price)
 (s/def ::l ::price)
 (s/def ::c ::price)
+(s/def ::time inst?)
 (s/def ::bar (s/keys :req-un [::id ::time ::o ::h ::l ::c]))
 (s/def ::series (ts/time-series? ::bar))
 
@@ -78,3 +79,26 @@
   (let [num-same (num-consecutive-same-direction ha-series)]
     (second (last (take num-same ha-series))))
   )
+
+
+(def max-body-percentage 0.4)
+(def max-wick-difference-percentage 0.1)
+
+(defn is-entry-bar?
+  "Want a bar with large wicks and a small body and the wicks are about the same size"
+  [bar]
+  (let [{:keys [o h l c]} bar
+        total-range (abs (- h l))
+        body-range (abs (- c o))
+        [top-wick-range bottom-wick-range] (case (calculate-bar-direction bar)
+                                             :UP [(- h c) (- o l)]
+                                             :DOWN [(- h o) (- c l)]
+                                             :NEUTRAL [(- h c) (- o l)])
+        wick-range-difference (abs (- top-wick-range bottom-wick-range))
+        total-wick-range (+ top-wick-range bottom-wick-range)]
+    (and
+      (not (zero? total-range))
+      (not (zero? total-wick-range))
+      (> max-body-percentage (/ body-range total-range))
+      (> max-wick-difference-percentage (/ wick-range-difference total-wick-range))
+      )))

@@ -3,13 +3,13 @@
             [app.auth-context :refer [auth-context]]
             [app.bfg :refer [bfg]]
             [mount.core :refer [defstate]]
-            [ig.stream :as stream]))
+            [bfg-ig.stream :as stream]))
 
 (defn start-listener
-  [config bfg]
+  []
   (let [c (a/chan)
         callback (fn [event] (a/>!! c event))]
-    (stream/create-connection-and-subscriptions! config callback)
+    (stream/create-connection-and-subscriptions! auth-context callback)
     (a/go-loop []
                (when-let [event (a/<! c)]
                  ;; TODO here we should update bfg based on event
@@ -19,5 +19,5 @@
 
 
 (defstate stream
-          :start (start-listener auth-context bfg)
+          :start (start-listener)
           :stop (a/close! stream))

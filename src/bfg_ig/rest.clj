@@ -1,4 +1,4 @@
-(ns ig.rest
+(ns bfg-ig.rest
   (:require [clojure.data.json :as json]))
 
 (defn create-session-v2

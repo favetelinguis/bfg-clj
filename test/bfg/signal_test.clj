@@ -37,6 +37,5 @@
   (with-redefs [atr/periods 2
                 signal/atr-multiple-setup-target 1
                 signal/consecutive-heikin-ashi-bars-trigger 2]
-    (is (signal/setup? :await-setup ohlc-series atr-series ha-series))
-    (is (not (signal/setup? :await-entry ohlc-series atr-series ha-series)))
+    (is (signal/setup? ohlc-series atr-series ha-series))
     ))
