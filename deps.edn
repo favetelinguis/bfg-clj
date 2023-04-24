@@ -7,6 +7,7 @@
         com.lightstreamer/ls-javase-client {:mvn/version "4.3.8"}
         mount/mount {:mvn/version "0.1.17"}
         net.sekao/odoyle-rules {:mvn/version "1.0.0"}
+        meander/epsilon {:mvn/version "0.0.650"}
         }
  :aliases
  {
