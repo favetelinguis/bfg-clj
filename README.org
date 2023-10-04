@@ -1,0 +1,10 @@
+#+title: Readme
+
+Run tests with
+clj -X:test
+
+run program
+clj -m main
+
+* TODOs
+* Notes

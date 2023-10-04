@@ -1,23 +1,22 @@
 (ns app.stream
-  (:require [clojure.core.async :as a]
-            [app.auth-context :refer [auth-context]]
-            [app.bfg :refer [bfg]]
-            [mount.core :refer [defstate]]
+  (:require [com.stuartsierra.component :as component]
             [bfg-ig.stream :as stream]))
 
-(defn start-listener
-  []
-  (let [c (a/chan)
-        callback (fn [event] (a/>!! c event))]
-    (stream/create-connection-and-subscriptions! auth-context callback)
-    (a/go-loop []
-               (when-let [event (a/<! c)]
-                 ;; TODO here we should update bfg based on event
-                 (println event)
-                 (recur)))
-    c))
+(defrecord IgStream [auth-context connection]
+  component/Lifecycle
+  (start [this]
+         (if connection
+           this
+           (let [c (stream/create-connection auth-context)]
+             (stream/connect! c)
+             (assoc this :connection c))))
+  (stop [this]
+        (if connection
+          (do
+            (stream/disconnect! connection)
+            (assoc this :connection nil))
+          this)))
 
-
-(defstate stream
-          :start (start-listener)
-          :stop (a/close! stream))
+(defn new-stream
+  [auth-context]
+  (map->IgStream {:auth-context auth-context}))

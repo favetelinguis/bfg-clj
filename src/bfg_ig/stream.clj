@@ -5,17 +5,18 @@
    [meander.epsilon :as m]
    [clojure.string :as str]
    [com.stuartsierra.component :as component]
-
    [clojure.spec.alpha :as s])
   (:import (com.lightstreamer.client ClientListener LightstreamerClient Subscription SubscriptionListener)
            (java.util Arrays)))
 
 ; TODO
-; Add subscription given market - have a way to create all types of subscriptions
-; Remove subscription given market
-; Check java example how to puzzle together objects
-; This component depends on all different market/account/potrfolio in channels user either pub/sub multimethod or some cond to route messages to the correct channel
-;
+; Im main create webserver and system
+; In app create a market core thread with an in channel market should have an atom state
+; In app create a stream core component
+; Send market in channel to stream
+; Handler should be able to access stream api and market atom so that handlers can control subscrion and see status and market
+; Use htmx to update the gui
+
 (def max-subscriptions 40)
 
 (defn new-connection-state
@@ -37,13 +38,13 @@
 (defn remove-subscription
   [connection-state subscription])
 
-(defn client-listener [connection-state]
+(defn client-listener []
   (reify
     ClientListener
     (onListenEnd [this a] (println "onListenEnd" a))
     (onListenStart [this a] (println "onListenStart" a))
     (onServerError [this v1 v2] (println "onServerError" v1 v2))
-    (onStatusChange [this status] (update-connection-status connection-state status))
+    (onStatusChange [this status] (println "onStatusChange" status))
     ))
 
 (defn new-subscription-listener [callback]
@@ -72,6 +73,7 @@
   :market-state TRADEABLE,
   :bid 15109.8, TODO convert to double
   :offer 15112.6} TODO convert to double
+  TODO write tests for this fn
   "
   ;; TODO maybe we need an error type to use or how should i handle exeptions?
   [item-update]
@@ -102,7 +104,7 @@
         mode "MERGE"
         fields ["UPDATE_TIME" "MARKET_DELAY" "MARKET_STATE" "BID" "OFFER"]
         ;; TODO how to catch exceptions that happen in the callback function?
-        callback (fn [item-update] (println (item-update->bfg-market-update-event item-update)))]
+        callback (fn [item-update] (println (item-update->bfg-market-update-event! item-update)))]
     (create-subscription item mode fields callback)))
 
 (defn trade-pattern
@@ -126,9 +128,9 @@
 
 
 (defn create-connection
-  [{:keys [identifier cst token ls-endpoint]} connection-state]
+  [{:keys [identifier cst token ls-endpoint]}]
   (let [password (str "CST-" cst "|XST-" token)
-        connection-listener (client-listener connection-state)
+        connection-listener (client-listener)
         client (LightstreamerClient. ls-endpoint nil)]
     (doto (.-connectionDetails client)
       (.setPassword password)
@@ -171,44 +173,12 @@
       seq)) ; use seq to get from Sring[] to someting more clojure
 
 
-(defrecord IgStream [auth-context connection connection-state]
-  component/Lifecycle
-  (start [this]
-         (if connection
-           this
-           (let [c (create-connection auth-context connection-state)]
-             (connect! c)
-             (assoc this :connection c))))
-  (stop [this]
-        (if connection
-          (do
-            (disconnect! connection)
-            (dissoc this :connection))
-          this)))
-
-(defn new-stream
-  [auth-context]
-  (map->IgStream {
-                  :auth-context auth-context
-                  :connection-state (atom (new-connection-state))
-                  }))
-
-(defn create-system
-  [auth-context]
-  (let []
-    (component/system-map
-                           :stream (new-stream auth-context)
-                           )))
 
 (comment
   (require 'config 'bfg-ig.setup)
   (def config (config/load!))
   (def auth-context (bfg-ig.setup/create-session! config))
-  (def state (atom (new-connection-state)))
-  (def conn (create-connection auth-context state))
-  ;; (def system (create-system auth-context))
-  ;; (alter-var-root #'system component/start)
-  ;; (alter-var-root #'system component/stop)
+  (def conn (create-connection auth-context))
   (def msub (new-market-subscription "IX.D.DAX.IFMM.IP"))
   (subscribe! conn msub)
   (connect! conn)
