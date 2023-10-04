@@ -1,5 +1,6 @@
 (ns app.market-generator
   (:require
+   [bfg.error :as error]
    [clojure.core.async :as a]
    [com.stuartsierra.component :as component]))
 
@@ -8,12 +9,14 @@
   (println "Starting MarketGenerator")
   (let [rx (a/chan)]
     (a/thread
-      (loop []
-        (when-let [event (a/<!! rx)]
-          (println "In MarketGenerator: " event)
-          (swap! state conj event)
-          (a/>!! tx {:type :market}) ; should import event and validate from singnal
-          (recur)))
+      (try
+        (loop []
+          (when-let [event (a/<!! rx)]
+            (println "In MarketGenerator: " event)
+            (swap! state conj event)
+            (a/>!! tx {:type :market}) ; should import event and validate from singnal
+            (recur)))
+        (catch Throwable e (a/>!! tx (error/create-fatal-error (ex-message e)))))
       (println "Shutting down MarketGenerator"))
     rx))
 

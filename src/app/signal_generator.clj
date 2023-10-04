@@ -1,19 +1,22 @@
 (ns app.signal-generator
   (:require
    [clojure.core.async :as a]
-   [com.stuartsierra.component :as component]))
+   [com.stuartsierra.component :as component]
+   [bfg.error :as error]))
 
 (defn start-signal-generator
   [{:keys [rx :as tx]} state]
   (println "Starting SignalGenerator")
   (let [rx (a/chan)]
     (a/thread
-      (loop []
-        (when-let [event (a/<!! rx)]
-          (println "In SignalGenerator: " event)
-          (swap! state conj event)
-          (a/>!! tx {:type :signal}) ; should import event and validate from singnal
-          (recur)))
+      (try
+        (loop []
+          (when-let [event (a/<!! rx)]
+            (println "In SignalGenerator: " event)
+            (swap! state conj event)
+            (a/>!! tx {:type :signal}) ; should import event and validate from singnal
+            (recur)))
+        (catch Throwable e (a/>!! tx (error/create-fatal-error (ex-message e)))))
       (println "Shutting down SignalGenerator"))
     rx))
 

@@ -1,5 +1,6 @@
 (ns app.portfolio
   (:require
+   [bfg.error :as error]
    [clojure.core.async :as a]
    [com.stuartsierra.component :as component]
    [bfg.portfolio :as portfolio]))
@@ -9,11 +10,15 @@
   (println "Starting Portfolio")
   (let [rx (a/chan)]
     (a/thread
-      (loop []
-        (when-let [event (a/<!! rx)]
-          (println "In Portfolio: " event)
-          (swap!  *session portfolio/update-session event)
-          (recur)))
+      (try
+        (loop []
+          (when-let [event (a/<!! rx)]
+            (println "In Portfolio: " event)
+            (swap!  *session portfolio/update-session event)
+            (recur)))
+        (catch Throwable e (swap! *session
+                                  portfolio/update-session
+                                  (error/create-fatal-error (ex-message e)))))
       (println "Shutting down Portfolio"))
     rx))
 

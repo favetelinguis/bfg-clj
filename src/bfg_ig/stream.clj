@@ -5,7 +5,8 @@
    [meander.epsilon :as m]
    [clojure.string :as str]
    [com.stuartsierra.component :as component]
-   [clojure.spec.alpha :as s])
+   [clojure.spec.alpha :as s]
+   [bfg.error :as error])
   (:import (com.lightstreamer.client ClientListener LightstreamerClient Subscription SubscriptionListener)
            (java.util Arrays)))
 
@@ -62,6 +63,12 @@
     (doto subscription
       (.addListener (new-subscription-listener callback)))))
 
+(defn create-callback
+  [transform-fn]
+  (fn [item-update]
+    (try (transform-fn item-update)
+         (catch Throwable e (error/create-fatal-error (ex-message e))))))
+
 (defn item-update->bfg-market-update-event!
   "Ensure that incomming data conforms to event structure.
   Throws exceptions need to catch Throwable both :post and m/match throws exceptions
@@ -99,12 +106,12 @@
 
 (defn new-market-subscription
   "TODO how to get channel in for each callback fn"
-  [epic]
+  [epic tx-fn]
   (let [item (str "MARKET" ":" epic)
         mode "MERGE"
         fields ["UPDATE_TIME" "MARKET_DELAY" "MARKET_STATE" "BID" "OFFER"]
-        ;; TODO how to catch exceptions that happen in the callback function?
-        callback (fn [item-update] (println (item-update->bfg-market-update-event! item-update)))]
+        ;; TODO have the one bug that exeptions thrown in tx-fn will not show
+        callback (tx-fn (create-callback item-update->bfg-market-update-event!))]
     (create-subscription item mode fields callback)))
 
 (defn trade-pattern
@@ -178,7 +185,7 @@
   (require 'config 'bfg-ig.setup)
   (def config (config/load!))
   (def auth-context (bfg-ig.setup/create-session! config))
-  (def conn (create-connection auth-context))
+  (def conn (create-connection auth-context ))
   (def msub (new-market-subscription "IX.D.DAX.IFMM.IP"))
   (subscribe! conn msub)
   (connect! conn)
