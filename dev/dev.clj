@@ -1,18 +1,18 @@
 (ns dev
-  (:require
-    [clojure.tools.namespace.repl :refer [refresh]]
-    [mount.core :as mount])
-  )
+  (:require [com.stuartsierra.component.repl :refer [reset set-init start stop system]]
+            [config]
+            [bfg-ig.setup :as ig-auth]
+            [main]))
 
-(defn go []
-  (let []
-    (mount/start #'app.config/basic-config
-                 #'app.auth-context/auth-context
-                 #'app.bfg/bfg
-                 #'app.stream/stream)
-    :ready))
+(set-init
+  (fn [_]
+    (let [conf (config/load!)
+          auth-context (ig-auth/create-session! conf)
+          ]
+      (main/create-system
+       {:port 3000
+        :auth-context auth-context}))))
 
-(defn reset []
-  (let []
-    (mount/stop)
-    (refresh :after 'dev/go)))
+(comment
+  (reset)
+  ,)
