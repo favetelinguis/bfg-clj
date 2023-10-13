@@ -63,13 +63,7 @@
     (doto subscription
       (.addListener (new-subscription-listener callback)))))
 
-(defn create-callback
-  [transform-fn]
-  (fn [item-update]
-    (try (transform-fn item-update)
-         (catch Throwable e (error/create-fatal-error (ex-message e))))))
-
-(defn item-update->bfg-market-update-event!
+(defn item-update->bfg-market-update-event
   "Ensure that incomming data conforms to event structure.
   Throws exceptions need to catch Throwable both :post and m/match throws exceptions
   and are not catched in this function
@@ -84,34 +78,38 @@
   "
   ;; TODO maybe we need an error type to use or how should i handle exeptions?
   [item-update]
-  {:post [(s/valid? :market/event %)]}
-  (let [epic (second (str/split (.getItemName item-update) #":"))
-        changed-fields (into {} (.getChangedFields item-update)) ; return an immutable java map so convert it to someting Clojure
-        ]
-    (m/match changed-fields
+  (try
+       (let [epic (second (str/split (.getItemName item-update) #":"))
+             changed-fields (into {} (.getChangedFields item-update)) ; return an immutable java map so convert it to someting Clojure
+             result (m/match changed-fields
 
-      {"UPDATE_TIME" ?UPDATE_TIME
-       "MARKET_DELAY" ?MARKET_DELAY
-       "MARKET_STATE" ?MARKET_STATE
-       "BID" ?BID
-       "OFFER" ?OFFER}
+               {"UPDATE_TIME" ?UPDATE_TIME
+                "MARKET_DELAY" ?MARKET_DELAY
+                "MARKET_STATE" ?MARKET_STATE
+                "BID" ?BID
+                "OFFER" ?OFFER}
 
-      {:market/update-time ?UPDATE_TIME
-       :market/market-delay ?MARKET_DELAY
-       :market/market-state ?MARKET_STATE
-       :market/bid ?BID ; we can delete this and only use candle for price
-       :market/offer ?OFFER ; we can delete this and only use candle for price
-       :market/type :market/market-update
-       :market/epic epic})))
+                ; TODO is this really the only way to refere to a namespaced keyword?
+               {:bfg.market/update-time ?UPDATE_TIME
+                :bfg.market/market-delay ?MARKET_DELAY
+                :bfg.market/market-state ?MARKET_STATE
+                :bfg.market/bid ?BID ; we can delete this and only use candle for price
+                :bfg.market/offer ?OFFER ; we can delete this and only use candle for price
+                :bfg.market/type :bfg.market/market-update
+                :bfg.market/epic epic})]
+         (if (s/valid? :bfg.market/event result)
+           result
+          (error/create-fatal-error (str "Invalid market update: " result))))
+       (catch Throwable e (error/create-fatal-error (ex-message e)))))
 
 (defn new-market-subscription
-  "TODO how to get channel in for each callback fn"
+  "tx-fn should be a fn that takes a :market/event"
   [epic tx-fn]
   (let [item (str "MARKET" ":" epic)
         mode "MERGE"
+        ; TODO remove bid offer and use candle stream as only source to reduce load
         fields ["UPDATE_TIME" "MARKET_DELAY" "MARKET_STATE" "BID" "OFFER"]
-        ;; TODO have the one bug that exeptions thrown in tx-fn will not show
-        callback (tx-fn (create-callback item-update->bfg-market-update-event!))]
+        callback #(-> % item-update->bfg-market-update-event tx-fn)]
     (create-subscription item mode fields callback)))
 
 (defn trade-pattern

@@ -6,6 +6,7 @@
             [ring.middleware.keyword-params :as keyword-params]
             [hiccup.page :as hp]
             [hiccup2.core :as h]
+            [ring.logger :as logger]
 
             [app.web.views :as views]
             [app.web.controllers :as controllers]))
@@ -26,6 +27,7 @@
                          (-> controllers/app-routes
                              (keyword-params/wrap-keyword-params)
                              (params/wrap-params)
+                             (logger/wrap-with-logger)
                              (wrap-dependencies this))
                          {:port port
                           :join? false})]
