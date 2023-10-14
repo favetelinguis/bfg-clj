@@ -20,7 +20,7 @@
    {::update-account
     [:what
      [::tx-fn ::execution tx-fn]
-     [::event ::account-event te]
+     [::event ::signal e]
      :then
      (tx-fn {:type :output-from-rules})]
 
@@ -38,7 +38,7 @@
 (defn update-session
   [session {:keys [type] :as event}]
   (-> session
-      (o/insert ::event type event)
+      (o/insert ::event ::signal event) ; TODO will have to figure out a good way to insert and detect different events
       o/fire-rules))
 
 (defn get-all-events

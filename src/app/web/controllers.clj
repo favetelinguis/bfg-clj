@@ -29,7 +29,8 @@
 
             [app.web.views :as views]
             [bfg-ig.stream.subscription :as subscription]
-            [bfg-ig.stream.connection :as stream]))
+            [bfg-ig.stream.connection :as stream]
+            [clojure.core.async :as a]))
 
 (defn- page-title
   [title]
@@ -79,10 +80,11 @@
     (POST "/market/subscription" request
          (let [{:keys [epic]} (:params request)
                {:keys [connection]} (get-in request [:dependencies :stream])
-               ; TODO subscription in channel to market-generator
+               {:keys [rx]} (get-in request [:dependencies :market-generator])
                ; TODO we should also subscribe to candle data here.
                ; TODO we should not be able to subscribe to something we already have subscribed to
-               sub (subscription/new-market-subscription epic println)]
+               sub (subscription/new-market-subscription epic #(a/>!! rx %))]
+           (println "CHANNEL " request)
            (stream/subscribe! connection sub)
            (response/redirect "/market/subscription/list" :see-other)))
 

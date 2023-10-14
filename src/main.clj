@@ -37,7 +37,7 @@
 
    :web-server
    (component/using (server-component/new-http-server-component port)
-                    [:stream :portfolio])))
+                    [:stream :portfolio :market-generator :signal-generator])))
 
 (defn -main
   [& [port]]

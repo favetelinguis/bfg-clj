@@ -17,7 +17,7 @@
     (handler (assoc request :dependencies dependencies))))
 
 (defrecord HttpServerComponent
-    [port steam portfolio web-server]
+    [port steam portfolio web-server market-generator signal-generator]
   component/Lifecycle
   (start [this]
     (println "Starting HttpServerCompoent")

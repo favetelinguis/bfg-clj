@@ -5,15 +5,18 @@
    [bfg.error :as error]))
 
 (defn start-signal-generator
-  [{:keys [rx :as tx]} state]
+  [portfolio state]
   (println "Starting SignalGenerator")
-  (let [rx (a/chan)]
+  (let [rx (a/chan)
+        tx (get-in portfolio [:rx])]
     (a/thread
       (try
         (loop []
           (when-let [event (a/<!! rx)]
             (println "In SignalGenerator: " event)
             (swap! state conj event)
+            ;; (when-let [signal (sig/update-signal ...)]
+            ;;   (a/>!! tx {:type :signal}))
             (a/>!! tx {:type :signal}) ; should import event and validate from singnal
             (recur)))
         (catch Throwable e (a/>!! tx (error/create-fatal-error (ex-message e)))))

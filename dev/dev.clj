@@ -22,11 +22,12 @@
   (h/html (views/market-main))
   (reset)
   (ns-unalias 'dev 'stream)
-
+  (:market-generator system)
   (let [connection (:connection (:stream system))]
     (subscription/get-market-data-subscription
      (stream/get-subscriptions connection)
      "IX.D.DAX.IFMM.IP"))
+  @(get-in system [:market-generator :state])
   ,)
 
 #_(s/explain :bfg.market/event

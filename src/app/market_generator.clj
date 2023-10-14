@@ -5,20 +5,21 @@
    [com.stuartsierra.component :as component]))
 
 (defn start-market-generator
-  [{:keys [rx :as tx]} state]
+  [signal-generator state]
   (println "Starting MarketGenerator")
-  (let [rx (a/chan)]
+  (let [in-channel (a/chan)
+        tx (get-in signal-generator [:rx])]
     (a/thread
       (try
         (loop []
-          (when-let [event (a/<!! rx)]
-            (println "In MarketGenerator: " event)
+          (when-let [event (a/<!! in-channel)]
+            (println "In MarketGenerator: " event signal-generator)
             (swap! state conj event)
             (a/>!! tx {:type :market}) ; should import event and validate from singnal
             (recur)))
         (catch Throwable e (a/>!! tx (error/create-fatal-error (ex-message e)))))
       (println "Shutting down MarketGenerator"))
-    rx))
+    in-channel))
 
 (defrecord MarketGenerator [rx signal-generator state]
   component/Lifecycle
