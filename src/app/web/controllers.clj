@@ -28,7 +28,8 @@
             [compojure.route :as route]
 
             [app.web.views :as views]
-            [bfg-ig.stream :as stream]))
+            [bfg-ig.stream.subscription :as subscription]
+            [bfg-ig.stream.connection :as stream]))
 
 (defn- page-title
   [title]
@@ -80,8 +81,16 @@
                {:keys [connection]} (get-in request [:dependencies :stream])
                ; TODO subscription in channel to market-generator
                ; TODO we should also subscribe to candle data here.
-               subscription (stream/new-market-subscription epic println)]
-           (stream/subscribe! connection subscription)
+               sub (subscription/new-market-subscription epic println)]
+           (stream/subscribe! connection sub)
+           (response/redirect "/market/subscription/list" :see-other)))
+
+    (DELETE "/market/:epic/subscription" request
+         (let [{:keys [epic]} (:params request)
+               {:keys [connection]} (get-in request [:dependencies :stream])
+               sub (subscription/get-market-data-subscription epic)]
+           (when sub
+             (stream/unsubscribe! connection subs))
            (response/redirect "/market/subscription/list" :see-other)))
 
     (GET "/market/subscription/list" request

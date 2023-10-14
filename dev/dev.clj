@@ -5,7 +5,8 @@
             [bfg-ig.setup :as ig-auth]
             [main]
             [app.web.views :as views]
-            [bfg-ig.stream :as stream]
+            [bfg-ig.stream.connection :as stream]
+            [bfg-ig.stream.subscription :as subscription]
             [clojure.spec.alpha :as s]))
 
 (set-init
@@ -23,7 +24,9 @@
   (ns-unalias 'dev 'stream)
 
   (let [connection (:connection (:stream system))]
-    (.isActive(first (stream/get-subscriptions connection))))
+    (subscription/get-market-data-subscription
+     (stream/get-subscriptions connection)
+     "IX.D.DAX.IFMM.IP"))
   ,)
 
 #_(s/explain :bfg.market/event
