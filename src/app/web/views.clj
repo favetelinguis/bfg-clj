@@ -13,9 +13,9 @@
    [:h1 "Handle markets"]
    [:form
     [:label {:for "search"} "Subscribe to epic:"]
-    [:input {:id "search" :name "epic" :type "search" :placeholder "Enter epic"}]
+    [:input#search {:name "epic" :type "search" :placeholder "Enter epic"}]
     [:button {:hx-post "/market/subscription" :hx-target "#market-list"} "Start subscription"]]
-   [:div {:id "market-list"}]])
+   [:div#market-list]])
 
 (defn account-main []
   [:div
@@ -32,6 +32,12 @@
    [:p [:a {:href "./market"} "Handle markets"]]
    [:p [:a {:href "./portfolio"} "View portfolio"]]
    [:p [:a {:href "./account"} "Handle account"]]])
+
+(defn market-list [markets]
+  (let []
+    (for [m markets]
+      [:li m
+       [:button {:hx-delete (str "/market/" m "/subscription") :hx-target "#market-list"} "End subscription"]])))
 
 (defn not-found []
   [:div

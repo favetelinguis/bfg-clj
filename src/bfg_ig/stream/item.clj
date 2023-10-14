@@ -12,6 +12,11 @@
   [epic]
   (str "MARKET:" epic))
 
+(defn get-epic
+  [item]
+  (second
+   (str/split item #":")))
+
 (defn trade-item
   [account-id]
   (str "TRADE:" account-id))

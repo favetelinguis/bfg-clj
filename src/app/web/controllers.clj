@@ -81,6 +81,7 @@
                {:keys [connection]} (get-in request [:dependencies :stream])
                ; TODO subscription in channel to market-generator
                ; TODO we should also subscribe to candle data here.
+               ; TODO we should not be able to subscribe to something we already have subscribed to
                sub (subscription/new-market-subscription epic println)]
            (stream/subscribe! connection sub)
            (response/redirect "/market/subscription/list" :see-other)))
@@ -88,17 +89,21 @@
     (DELETE "/market/:epic/subscription" request
          (let [{:keys [epic]} (:params request)
                {:keys [connection]} (get-in request [:dependencies :stream])
-               sub (subscription/get-market-data-subscription epic)]
+               subs (stream/get-subscriptions connection)
+               sub (subscription/get-market-data-subscription subs epic)]
            (when sub
-             (stream/unsubscribe! connection subs))
+             (stream/unsubscribe! connection sub))
            (response/redirect "/market/subscription/list" :see-other)))
 
     (GET "/market/subscription/list" request
-         (let []
-           ; TODO use stream to get all subscriptions and render them, also render a unsubscribe button, get input data for button not as form
-           (-> (views/main)
-               (ui-component)
-               (ok))))
+         (let [{:keys [connection]} (get-in request [:dependencies :stream])
+               subs (stream/get-subscriptions connection)]
+           (-> connection
+               stream/get-subscriptions
+               subscription/get-subscribed-epics
+               views/market-list
+               ui-component
+               ok)))
 
     (route/not-found
      (-> (views/not-found)

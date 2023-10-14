@@ -1,3 +1,3 @@
 (ns bfg-ig.chart)
 
-(defn update [])
+(defn update-chart [])
