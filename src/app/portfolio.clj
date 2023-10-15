@@ -37,4 +37,4 @@
 (defn new-portfolio []
   (map->Portfolio {:session (atom
                              (portfolio/create-session
-                              (fn [event] (println "Im the tx-fn will be a channel"))))}))
+                              (fn [event] (println "Im the tx-fn will be a channel: " event))))}))

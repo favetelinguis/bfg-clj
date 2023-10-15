@@ -2,7 +2,8 @@
   (:require
    [clojure.core.async :as a]
    [com.stuartsierra.component :as component]
-   [bfg.error :as error]))
+   [bfg.error :as error]
+   [core.events :as event]))
 
 (defn start-signal-generator
   [portfolio state]
@@ -17,7 +18,8 @@
             (swap! state conj event)
             ;; (when-let [signal (sig/update-signal ...)]
             ;;   (a/>!! tx {:type :signal}))
-            (a/>!! tx {:type :signal}) ; should import event and validate from singnal
+            (when-let [tx-event (event/create-event ::event/signal {})]
+              (a/>!! tx tx-event))
             (recur)))
         (catch Throwable e (a/>!! tx (error/create-fatal-error (ex-message e)))))
       (println "Shutting down SignalGenerator"))
