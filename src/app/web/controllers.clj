@@ -26,10 +26,9 @@
             [hiccup.page :as hp]
             [hiccup2.core :as h]
             [compojure.route :as route]
-
             [app.web.views :as views]
-            [bfg-ig.stream.subscription :as subscription]
-            [bfg-ig.stream.connection :as stream]
+            [ig.stream.subscription :as subscription]
+            [ig.stream.connection :as stream]
             [clojure.core.async :as a]))
 
 (defn- page-title

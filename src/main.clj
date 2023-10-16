@@ -1,43 +1,39 @@
 (ns main
-  (:require
-   [ring.adapter.jetty :refer [run-jetty]]
-   [clojure.core.async :as a]
-   [compojure.coercions :refer [as-int]]
-   [compojure.core :refer [GET POST PUT DELETE let-routes]]
-   [compojure.route :as route]
-   [com.stuartsierra.component :as component])
-  (:require
-   [config]
-   [app.web.controllers :as controller]
-   [app.web.server :as server-component]
-   [bfg-ig.setup :as ig-auth]
-   [app.market-generator :as market]
-   [app.signal-generator :as signal]
-   [app.portfolio :as portfolio]
-   [app.stream :as stream])
+  (:require [ring.adapter.jetty :refer [run-jetty]]
+            [com.stuartsierra.component :as component]
+            [clj-http.client :as client]
+            [ig.setup :as ig-auth]
+            [config]
+            [app.web.server :as server-component]
+            [app.market-generator :as market]
+            [app.command-executor :as command-executor]
+            [app.portfolio :as portfolio]
+            [app.stream :as stream]
+            )
   (:gen-class))
 
 
 (defn create-system
   [{:keys [auth-context port]}]
   (component/system-map
-   :market-generator
-   (component/using (market/new-market-generator)
-                    [:signal-generator])
-
-   :signal-generator
-   (component/using (signal/new-signal-generator)
-                    [:portfolio])
-
-   :portfolio
-   (portfolio/new-portfolio)
 
    :stream
    (stream/new-stream auth-context)
 
+   :command-executor
+   (command-executor/new client/request)
+
+   :portfolio
+   (component/using (portfolio/new-portfolio)
+                    [:command-executor])
+
+   :market-generator
+   (component/using (market/new-market-generator)
+                    [:portfolio])
+
    :web-server
    (component/using (server-component/new-http-server-component port)
-                    [:stream :portfolio :market-generator :signal-generator])))
+                    [:stream :portfolio])))
 
 (defn -main
   [& [port]]

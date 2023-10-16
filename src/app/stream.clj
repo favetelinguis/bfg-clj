@@ -1,6 +1,7 @@
 (ns app.stream
   (:require [com.stuartsierra.component :as component]
-            [bfg-ig.stream.connection :as stream]))
+            [ig.stream.connection :as stream]
+            [ig.stream.subscription :as subscription]))
 
 (defrecord IgStream [auth-context connection]
   component/Lifecycle

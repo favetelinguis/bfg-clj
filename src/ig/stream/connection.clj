@@ -1,12 +1,12 @@
 ; Only one connection is allowed, max 40 subscriptions is allowed on that connection.
-(ns bfg-ig.stream.connection
+(ns ig.stream.connection
   (:require
-   [bfg.market :as market]
+   [core.event.market :as market]
    [meander.epsilon :as m]
    [clojure.string :as str]
    [com.stuartsierra.component :as component]
    [clojure.spec.alpha :as s]
-   [bfg.error :as error])
+   [core.event.error :as error])
   (:import (com.lightstreamer.client ClientListener LightstreamerClient Subscription SubscriptionListener)
            (java.util Arrays)))
 

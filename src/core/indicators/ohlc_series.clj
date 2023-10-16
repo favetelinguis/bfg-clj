@@ -1,6 +1,6 @@
-(ns bfg.indicators.ohlc-series
+(ns core.indicators.ohlc-series
   (:require [clojure.spec.alpha :as s]
-            [bfg.indicators.time-series :as ts]
+            [core.indicators.time-series :as ts]
             ))
 
 (s/def ::id keyword?)

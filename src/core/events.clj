@@ -1,8 +1,10 @@
 (ns core.events
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [core.event.account :as account]
+            [core.event.trade :as trade]
+            [core.event.market :as market]))
 
-
-(s/def ::kind #{::market-update ::candle-update ::account-update ::trade-update ::signal})
+(s/def ::kind #{::market/candle ::market/status-update ::account/update ::trade/updatel})
 
 (defn create-event
   "TODO can I validate all created events"

@@ -1,33 +1,40 @@
 (ns dev
   (:require [com.stuartsierra.component.repl :refer [reset set-init start stop system]]
-            [hiccup2.core :as h]
+            [hiccup2.core :as hv]
             [config]
-            [bfg-ig.setup :as ig-auth]
+            [ig.setup :as ig-authv]
             [main]
-            [app.web.views :as views]
-            [bfg-ig.stream.connection :as stream]
-            [bfg-ig.stream.subscription :as subscription]
-            [clojure.spec.alpha :as s]))
+            [app.web.views :as devv]
+            [ig.stream.connection :as igstream]
+            [ig.stream.subscription :as igsubscription]
+            [ig.rest :as igrest]
+            [clojure.spec.alpha :as ds]
+            [cheshire.core :as djson]))
+
+(def conf (config/load!))
+
+(def auth-context (ig-authv/create-session! conf))
 
 (set-init
   (fn [_]
-    (let [conf (config/load!)
-          auth-context (ig-auth/create-session! conf)
-          ]
+    (let []
       (main/create-system
        {:port 3000
         :auth-context auth-context}))))
 
 (comment
-  (h/html (views/market-main))
+  (hv/html (devv/market-main))
   (reset)
-  (ns-unalias 'dev 'stream)
+  (start)
+  (stop)
+  (ns-unalias 'dev 'igstream)
   (:market-generator system)
   (let [connection (:connection (:stream system))]
-    (subscription/get-market-data-subscription
-     (stream/get-subscriptions connection)
+    (igsubscription/get-market-data-subscription
+     (igstream/get-subscriptions connection)
      "IX.D.DAX.IFMM.IP"))
   @(get-in system [:market-generator :state])
+  (ig-authv/client! (igrest/create-session-v2 (config/load!)))
   ,)
 
 #_(s/explain :bfg.market/event

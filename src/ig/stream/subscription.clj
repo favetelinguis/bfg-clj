@@ -1,12 +1,10 @@
-(ns bfg-ig.stream.subscription
+(ns ig.stream.subscription
 (:require
- [bfg-ig.stream.item :as i]
-   [bfg.market :as market]
+   [ig.stream.item :as i]
    [meander.epsilon :as m]
    [clojure.string :as str]
    [com.stuartsierra.component :as component]
-   [clojure.spec.alpha :as s]
-   [bfg.error :as error])
+   [clojure.spec.alpha :as s])
 (:import (com.lightstreamer.client ClientListener LightstreamerClient Subscription SubscriptionListener)
            (java.util Arrays))
   )
@@ -35,6 +33,25 @@
         fields ["UPDATE_TIME" "MARKET_DELAY" "MARKET_STATE" "BID" "OFFER"]
         callback #(-> % i/market-item-update->bfg-market-update-event tx-fn)]
     (create-subscription item mode fields callback)))
+
+(defn new-account-subscription
+  [{:keys [account]} tx-fn]
+  (let [item (i/account-item account)
+        mode "MERGE"
+        fields ["AVAILABLE_CASH" "FUNDS" "MARGIN"]
+        callback #(-> i/market-item-update->bfg-account-update-event tx-fn)]
+    (create-subscription item mode fields callback)))
+
+(defn new-trade-subscription
+  [{:keys [account]} tx-fn]
+  (let [item (i/trade-item account)
+        mode "DISTINCT"
+        fields ["CONFIRMS" "OPU" "WOU"]
+        callback #(-> i/market-item-update->bfg-trade-update-event tx-fn)]
+    (create-subscription item mode fields callback)))
+
+(defn new-trade-subscription
+  [{:keys [account]} tx-fn])
 
 (defn get-item
   "Will return item used for subscription, for example MARKET:<epic>

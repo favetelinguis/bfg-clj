@@ -1,4 +1,4 @@
-(ns bfg.error
+(ns core.event.error
   (:require [clojure.spec.alpha :as s]))
 
 (s/def ::message string?)

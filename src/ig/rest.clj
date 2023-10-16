@@ -1,5 +1,11 @@
-(ns bfg-ig.rest
-  (:require [clojure.data.json :as json]))
+(ns ig.rest
+  (:require
+   [clj-http.client :as client]
+   [cheshire.core :as json]))
+
+(defn do-request
+  [m]
+  (client/request m))
 
 (defn create-session-v2
   [{:keys [base-url identifier password apikey]}]
@@ -8,6 +14,6 @@
              "version"      "2"
              "x-ig-api-key" apikey}
    :method  :post
-   :uri     (str base-url "/session")
-   :body    (json/write-str {"identifier" identifier "password" password})}
+   :url     (str base-url "/session")
+   :body    (json/generate-string {"identifier" identifier "password" password})}
   )

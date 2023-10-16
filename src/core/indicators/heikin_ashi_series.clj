@@ -1,5 +1,5 @@
-(ns bfg.indicators.heikin-ashi-series
-  (:require [bfg.indicators.time-series :as ts]
+(ns core.indicators.heikin-ashi-series
+  (:require [core.indicators.time-series :as ts]
             [clojure.spec.alpha :as s]))
 
 (s/def ::id keyword?)

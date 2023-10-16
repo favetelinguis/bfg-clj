@@ -1,5 +1,5 @@
-(ns bfg.indicators.atr-series
-  (:require [bfg.indicators.time-series :as ts]
+(ns core.indicators.atr-series
+  (:require [core.indicators.time-series :as ts]
             [clojure.spec.alpha :as s]))
 
 (s/def ::atr (s/double-in :min 0. :max 100000.0))

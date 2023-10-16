@@ -1,4 +1,4 @@
-(ns bfg.indicators.time-series
+(ns core.indicators.time-series
   (:require [clojure.spec.alpha :as s]))
 
 (s/def ::time inst?)
