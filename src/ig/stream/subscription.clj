@@ -25,13 +25,17 @@
       (.addListener (new-subscription-listener callback)))))
 
 (defn new-market-subscription
-  "tx-fn should be a fn that takes a :market/event"
-  [epic tx-fn]
+  "state is an atom used to build up market state, tx-fn is connection to portfolio and should
+  takes a vararg of events"
+  [epic tx-fn state]
   (let [item (i/market-item epic)
         mode "MERGE"
         ; TODO remove bid offer and use candle stream as only source to reduce load
         fields ["UPDATE_TIME" "MARKET_DELAY" "MARKET_STATE" "BID" "OFFER"]
-        callback #(-> % i/market-item-update->bfg-market-update-event tx-fn)]
+        callback #(fn [item-update]
+                    (when-let [events (first
+                                       (swap! state ig.market-cache/update-status item-update))]
+                      (apply tx-fn events)))]
     (create-subscription item mode fields callback)))
 
 (defn new-account-subscription

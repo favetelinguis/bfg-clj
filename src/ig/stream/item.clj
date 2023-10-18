@@ -1,6 +1,6 @@
 (ns ig.stream.item
   (:require
-   [core.event.market :as market]
+   [ig.market-cache :as market]
    [meander.epsilon :as m]
    [clojure.string :as str]
    [com.stuartsierra.component :as component]
@@ -36,7 +36,7 @@
   (partial chart-candle-item "1MINUTE"))
 
 
-(defn market-item-update->bfg-market-update-event
+(defn market-item-update->market-update
   "Ensure that incomming data conforms to event structure.
   Throws exceptions need to catch Throwable both :post and m/match throws exceptions
   and are not catched in this function
@@ -49,30 +49,24 @@
   :offer 15112.6} TODO convert to double
   TODO write tests for this fn
   "
-  ;; TODO maybe we need an error type to use or how should i handle exeptions?
   [item-update]
-  (try
-       (let [epic (second (str/split (.getItemName item-update) #":"))
-             changed-fields (into {} (.getChangedFields item-update)) ; return an immutable java map so convert it to someting Clojure
-             result (m/match changed-fields
+  (let [epic (second (str/split (.getItemName item-update) #":"))
+        changed-fields (into {} (.getChangedFields item-update)) ; return an immutable java map so convert it to someting Clojure
+        result (m/match changed-fields
 
-               {"UPDATE_TIME" ?UPDATE_TIME
-                "MARKET_DELAY" ?MARKET_DELAY
-                "MARKET_STATE" ?MARKET_STATE
-                "BID" ?BID
-                "OFFER" ?OFFER}
+                 {"UPDATE_TIME" ?UPDATE_TIME
+                  "MARKET_DELAY" ?MARKET_DELAY
+                  "MARKET_STATE" ?MARKET_STATE
+                  "BID" ?BID
+                  "OFFER" ?OFFER}
 
-               {::market/update-time ?UPDATE_TIME
-                ::market/market-delay ?MARKET_DELAY
-                ::market/market-state ?MARKET_STATE
-                ::market/bid ?BID ; we can delete this and only use candle for price
-                ::market/offer ?OFFER ; we can delete this and only use candle for price
-                ::market/type ::market/market-update
-                ::market/epic epic})]
-         (if (s/valid? ::market/event result)
-           result
-          (error/create-fatal-error (str "Invalid market update: " result))))
-       (catch Throwable e (error/create-fatal-error (ex-message e)))))
+                 {::market/update-time ?UPDATE_TIME
+                  ::market/market-delay ?MARKET_DELAY
+                  ::market/market-state ?MARKET_STATE
+                  ::market/bid ?BID ; we can delete this and only use candle for price
+                  ::market/offer ?OFFER ; we can delete this and only use candle for price
+                  ::market/type ::market/market-update
+                  ::market/epic epic})]))
 
 (defn market-item-update->bfg-account-update-event
   [item-update]

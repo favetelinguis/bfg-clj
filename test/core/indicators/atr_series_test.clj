@@ -1,8 +1,8 @@
-(ns bfg.indicators.atr-series-test
+(ns core.indicators.atr-series-test
   (:require [clojure.test :refer :all])
   (:require
-    [bfg.data-test :as data]
-    [bfg.indicators.atr-series :as atr]
+    [core.data-test :as data]
+    [core.indicators.atr-series :as atr]
     [bfg.indicators.time-series :as ts])
   )
 

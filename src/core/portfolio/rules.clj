@@ -44,11 +44,10 @@
     }))
 
 (defn create-session
-  "tx-fn is the function used to communicate side effect outside of session
-  it will send out the following events ::order/open..."
-  [tx-fn]
+  "command-executor is an impl of protocol CommandExecutor"
+  [command-executor]
   (-> (reduce o/add-rule (o/->session) rules)
-      (o/insert ::tx-fn ::execution tx-fn)))
+      (o/insert ::executors ::command command-executor)))
 
 (defn get-all-events
   [session]

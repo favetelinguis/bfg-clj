@@ -11,3 +11,15 @@
   [kind base-event]
   (when (s/valid? ::kind kind)
     (merge base-event {::kind kind})))
+
+(defn create-bid-event
+  [epic bid]
+  {::epic epic
+   ::bid bid
+   ::kind ::bid})
+
+(defn create-offer-event
+  [epic offer]
+  {::epic epic
+   ::bid offer
+   ::kind ::offer})

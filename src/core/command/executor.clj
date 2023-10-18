@@ -20,7 +20,9 @@
 
 (defprotocol CommandExecutor
   "A set of functions for creating orders
-  TODO Do each function need to take this as first arg"
+  Each function will execute in the portfolio, it is very important not to block since that will
+  prevent portfolio from processing data. Each function in CommandExecutor should execute
+  in an async way to not block portfolio."
   (open-working-order! [this order] "Used to open new working order")
   (close-working-order! [this order] "Used to close a working order"))
 

@@ -78,12 +78,13 @@
 
     (POST "/market/subscription" request
          (let [{:keys [epic]} (:params request)
-               {:keys [connection]} (get-in request [:dependencies :stream])
-               {:keys [rx]} (get-in request [:dependencies :market-generator])
+               {:keys [connection state]} (get-in request [:dependencies :stream])
+               {:keys [rx]} (get-in request [:dependencies :portfolio])
                ; TODO we should also subscribe to candle data here.
                ; TODO we should not be able to subscribe to something we already have subscribed to
-               sub (subscription/new-market-subscription epic #(a/>!! rx %))]
-           (println "CHANNEL " request)
+               sub (subscription/new-market-subscription epic (fn [& more]
+                                                                (doseq [m more]
+                                                                  (a/>!! rx m))) state)]
            (stream/subscribe! connection sub)
            (response/redirect "/market/subscription/list" :see-other)))
 

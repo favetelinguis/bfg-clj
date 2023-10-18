@@ -18,18 +18,10 @@
   (component/system-map
 
    :stream
-   (stream/new-stream auth-context)
-
-   :command-executor
-   (command-executor/new client/request)
+   (stream/new auth-context)
 
    :portfolio
-   (component/using (portfolio/new-portfolio)
-                    [:command-executor])
-
-   :market-generator
-   (component/using (market/new-market-generator)
-                    [:portfolio])
+   (portfolio/new auth-context)
 
    :web-server
    (component/using (server-component/new-http-server-component port)

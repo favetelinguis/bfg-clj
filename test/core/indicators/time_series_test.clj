@@ -1,6 +1,6 @@
-(ns bfg.indicators.time-series-test
-  (:require [bfg.indicators.time-series :as ts]
-            [bfg.data-test :as data])
+(ns core.indicators.time-series-test
+  (:require [core.indicators.time-series :as ts]
+            [core.data-test :as data])
   (:require [clojure.test :refer :all])
   (:import (java.time Instant)))
 

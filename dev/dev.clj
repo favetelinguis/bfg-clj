@@ -9,13 +9,14 @@
             [ig.stream.subscription :as igsubscription]
             [ig.rest :as igrest]
             [clojure.spec.alpha :as ds]
-            [cheshire.core :as djson]))
+            [cheshire.core :as djson]
+            [clj-http.client :as client]))
 
 (def conf (config/load!))
 
-(def auth-context (ig-authv/create-session! conf))
+#_(def auth-context (ig-authv/create-session! conf))
 
-(set-init
+#_(set-init
   (fn [_]
     (let []
       (main/create-system
@@ -34,8 +35,12 @@
      (igstream/get-subscriptions connection)
      "IX.D.DAX.IFMM.IP"))
   @(get-in system [:market-generator :state])
-  (ig-authv/client! (igrest/create-session-v2 (config/load!)))
+  (ig-authv/client! (igrest/open-order (config/load!)))
+  (ig-authv/create-session! conf)
   ,)
 
-#_(s/explain :bfg.market/event
-          {:bfg.market/update-time "20:12:27", :bfg.market/market-delay nil, :bfg.market/market-state nil, :bfg.market/bid "15167.6", :bfg.market/offer "15170.4", :bfg.market/type :market/market-update, :bfg.market/epic "IX.D.DAX.IFMM.IP"})
+(client/request {:url     "https://google.com"
+                 :async? true
+                 :respond (fn [response] (println "response is:" response))
+                 ; raise will be called for all non 2xx and 3xx responses
+                 :raise (fn [exception] (println "exception message is: " (.getMessage exception)))})

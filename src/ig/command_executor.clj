@@ -1,7 +1,7 @@
 (ns ig.command-executor
   (:require [core.command.executor :refer [CommandExecutor]]))
 
-(deftype IgCommandExecutor [client]
+(deftype IgCommandExecutor [auth-context]
     CommandExecutor
   (open-working-order! [this order]
     (println "Open new working order"))

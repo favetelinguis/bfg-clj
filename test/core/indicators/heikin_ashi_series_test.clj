@@ -1,10 +1,10 @@
-(ns bfg.indicators.heikin-ashi-series-test
+(ns core.indicators.heikin-ashi-series-test
   (:require [clojure.test :refer :all])
   (:require
-    [bfg.indicators.heikin-ashi-series :as ha]
-    [bfg.data-test :as data]
-    [bfg.indicators.ohlc-series :as ohlc]
-    [bfg.indicators.time-series :as ts]
+    [core.indicators.heikin-ashi-series :as ha]
+    [core.data-test :as data]
+    [core.indicators.ohlc-series :as ohlc]
+    [core.indicators.time-series :as ts]
     )
   (:import (java.time Instant)))
 
