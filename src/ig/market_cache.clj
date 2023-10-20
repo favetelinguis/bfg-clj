@@ -1,30 +1,22 @@
 (ns ig.market-cache
-  (:require [clojure.spec.alpha :as s]
-            [core.events :as e]))
-
-;; {::events []
-;;  "epic1" {::status
-;;           ::candle...}}
-
-(s/def ::update-time (s/nilable string?))
-(s/def ::epic (s/nilable string?))
-(s/def ::delay (s/nilable string?))
-(s/def ::state (s/nilable #{"CLOSED" "OFFLINE" "TRADEABLE" "EDIT" "AUCTION" "AUCTION_NO_EDIT" "SUSPENDED"}))
-
-(s/def ::bid (s/nilable string?)) ;; remove
-(s/def ::offer (s/nilable string?)) ;; remove
+  (:require [core.events :as e]))
 
 (defn new []
   [[] {}])
 
 (defn update-status
-  [[_ old-m] {:keys [::epic ::bid ::offer] :as new-m}]
-  [(remove nil? [(when bid
-                   (e/create-bid-event epic bid))
-                 (when offer
-                   (e/create-offer-event epic offer))])
-   (update old-m epic merge new-m)])
+  "{UPDATE_TIME 20:27:18, MARKET_DELAY 0, MARKET_STATE TRADEABLE, BID 14794.2, OFFER 14797.0}
+  nil keys in new-m are filterd out"
+  [[_ market-cache] change]
+  (let [bid (get change "BID")
+        offer (get change "OFFER")
+        epic (get change "NAME")]
+    [(into [] (remove nil? [(when bid
+                             (e/create-bid-event epic (Double/parseDouble bid)))
+                           (when offer
+                             (e/create-ask-event epic (Double/parseDouble offer)))]))
+     (update market-cache epic merge change)]))
 
 (defn remove-epic
-  [old-m {:keys [::epic]}]
-  (dissoc old-m epic))
+  [[_ m] epic]
+  [[] (dissoc m epic)])

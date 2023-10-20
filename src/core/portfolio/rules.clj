@@ -1,46 +1,30 @@
 (ns core.portfolio.rules
-  (:require [clojure.spec.alpha :as s]
-            [odoyle.rules :as o]
-            [core.events :as event]
-            [core.event.market :as market]
-            [core.event.trade :as trade]
-            [core.event.account :as account]))
+  (:require
+   [odoyle.rules :as o]
+   [core.events :as e]
+   [core.command :as command]))
 
 (def rules
   (o/ruleset
    {
-    ::signal-update
+    ::bid-update
     [:what
-     [::tx-fn ::execution tx-fn]
-     [epic ::signal e]
+     [::executors ::command c]
+     [epic ::e/bid bid]
      :then
-     (tx-fn {:type :signal-from-rules})]
+     (command/open-working-order! c bid)]
 
-    ::account-uppdate
+    ::ask-update
     [:what
-     [::tx-fn ::execution tx-fn]
-     [account ::account e]
+     [::executors ::command c]
+     [epic ::e/ask ask]
      :then
-     (tx-fn {:type :account-from-rules})]
+     (command/close-working-order! c ask)]
 
-    ::trade-update
+    ::get-bid-ask-all-markets
     [:what
-     [::tx-fn ::execution tx-fn]
-     [epic ::trade e]
-     :then
-     (tx-fn {:type :trade-from-rules})]
-
-    ::unknown-update
-    [:what
-     [::tx-fn ::execution tx-fn]
-     [::event ::unknown e]
-     :then
-     (tx-fn {:type :unknown-from-rules})]
-
-    ::query-all-events
-    [:what
-     [::event ::trade-event te]
-     [::event ::account-event ae]]
+     [epic ::e/bid bid]
+     [epic ::e/ask ask]]
     }))
 
 (defn create-session
@@ -49,17 +33,17 @@
   (-> (reduce o/add-rule (o/->session) rules)
       (o/insert ::executors ::command command-executor)))
 
-(defn get-all-events
+(defn get-bid-ask-all-markets
   [session]
-  (o/query-all session ::query-all-events))
+  (o/query-all session ::get-bid-ask-all-markets))
 
 (defn update-session
-  [session {:keys [::event/kind] :as event}]
+  [session {:keys [::e/kind ::e/epic ::e/account] :as event}]
   (let [to-insert (case kind
-                    ::market/status-update [(::market/epic event) event]
-                    ::market/candle [(::market/epic event) event]
-                    ::account/update [(::account/name event) event]
-                    ::trade/update [(::trade/epic event) event]
+                    ::e/bid [epic kind event]
+                    ::e/ask [epic kind event]
+                    ::e/candle [epic kind event]
+                    ; TODO add all event kinds
                     [::event ::unknown event])]
     (-> session
         (o/insert to-insert)

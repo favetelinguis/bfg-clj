@@ -1,13 +1,8 @@
 (ns ig.stream.subscription
-(:require
+  (:require
    [ig.stream.item :as i]
-   [meander.epsilon :as m]
-   [clojure.string :as str]
-   [com.stuartsierra.component :as component]
-   [clojure.spec.alpha :as s])
-(:import (com.lightstreamer.client ClientListener LightstreamerClient Subscription SubscriptionListener)
-           (java.util Arrays))
-  )
+   [ig.market-cache :as market-cache])
+  (:import (com.lightstreamer.client Subscription SubscriptionListener)))
 
 (defn- new-subscription-listener [callback]
   (reify
@@ -15,47 +10,28 @@
     (onSubscription [this] (println "onSubscription"))
     (onListenStart [this subscription] (println subscription))
     (onListenEnd [this subscription] (println subscription))
-    (onItemUpdate [this update] (callback update))
+    (onItemUpdate [this item-update] (callback item-update))
     (onSubscriptionError [this code message] (println (str code ": " message)))))
 
-(defn- create-subscription
+(defn- new-subscription
   [item mode fields callback]
   (let [subscription (Subscription.  mode (into-array String [item]) (into-array String fields))]
     (doto subscription
       (.addListener (new-subscription-listener callback)))))
 
 (defn new-market-subscription
-  "state is an atom used to build up market state, tx-fn is connection to portfolio and should
+  "state is an atom used to build up market state, f is connection to portfolio and should
   takes a vararg of events"
-  [epic tx-fn state]
+  [epic f market-cache-state]
   (let [item (i/market-item epic)
         mode "MERGE"
         ; TODO remove bid offer and use candle stream as only source to reduce load
         fields ["UPDATE_TIME" "MARKET_DELAY" "MARKET_STATE" "BID" "OFFER"]
-        callback #(fn [item-update]
+        callback (fn [item-update]
                     (when-let [events (first
-                                       (swap! state ig.market-cache/update-status item-update))]
-                      (apply tx-fn events)))]
-    (create-subscription item mode fields callback)))
-
-(defn new-account-subscription
-  [{:keys [account]} tx-fn]
-  (let [item (i/account-item account)
-        mode "MERGE"
-        fields ["AVAILABLE_CASH" "FUNDS" "MARGIN"]
-        callback #(-> i/market-item-update->bfg-account-update-event tx-fn)]
-    (create-subscription item mode fields callback)))
-
-(defn new-trade-subscription
-  [{:keys [account]} tx-fn]
-  (let [item (i/trade-item account)
-        mode "DISTINCT"
-        fields ["CONFIRMS" "OPU" "WOU"]
-        callback #(-> i/market-item-update->bfg-trade-update-event tx-fn)]
-    (create-subscription item mode fields callback)))
-
-(defn new-trade-subscription
-  [{:keys [account]} tx-fn])
+                                       (swap! market-cache-state market-cache/update-status (i/into-map item-update)))]
+                      (apply f events)))]
+    (new-subscription item mode fields callback)))
 
 (defn get-item
   "Will return item used for subscription, for example MARKET:<epic>

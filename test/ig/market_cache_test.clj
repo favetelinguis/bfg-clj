@@ -5,35 +5,38 @@
 
 
 (t/deftest update-market-status
-  (t/is (= [[] {"dax" {::sut/epic "dax"}}]
-           (sut/update-status (sut/new) {::sut/epic "dax"})))
+  (t/is (= [[] {"dax" {"NAME" "dax"}}]
+           (sut/update-status (sut/new) {"NAME" "dax"})))
 
-  (t/is (= [[] {"dax" {::sut/epic "dax"}
-             "omx" {::sut/epic "omx"}}]
-           (sut/update-status [[] {"dax" {::sut/epic "dax"}}]
-                              {::sut/epic "omx"})))
+  ; nil keys in update is not supported
+  (t/is (= [[] {"dax" {"NAME" "dax" "MARKET_STATE" nil}}]
+           (sut/update-status [[] {"dax" {"NAME" "dax" "MARKET_STATE" "CLOSED"}}]
+                              {"NAME" "dax" "MARKET_STATE" nil})))
 
-  (t/is (= [[] {"dax" {::sut/epic "dax"}
-             "omx" {::sut/epic "omx"
-                    ::sut/state "OFFLINE"}}]
-           (sut/update-status [[] {"dax" {::sut/epic "dax"}
-                                "omx" {::sut/epic "omx"
-                                       ::sut/state "CLOSED"}}]
-                              {::sut/epic "omx"
-                               ::sut/state "OFFLINE"
+  (t/is (= [[] {"dax" {"NAME" "dax"}
+                "omx" {"NAME" "omx"}}]
+           (sut/update-status [[] {"dax" {"NAME" "dax"}}]
+                              {"NAME" "omx"})))
+
+  (t/is (= [[] {"dax" {"NAME" "dax"}
+                "omx" {"NAME" "omx"
+                       "MARKET_STATE" "OFFLINE"}}]
+           (sut/update-status [[] {"dax" {"NAME" "dax"}
+                                "omx" {"NAME" "omx"
+                                       "MARKET_STATE" "CLOSED"}}]
+                              {"NAME" "omx"
+                               "MARKET_STATE" "OFFLINE"
                                })))
   )
 
 (t/deftest update-bid-offer-generate-events
-  (t/is (= [[(e/create-bid-event "dax" "33")] {"dax" {::sut/epic "dax"
-                                                      ::sut/bid "33"}}]
-           (sut/update-status (sut/new) {::sut/epic "dax"
-                                         ::sut/bid "33"})))
+  (t/is (= [[(e/create-bid-event "dax" "33")] {"dax" {"NAME" "dax"
+                                                      "BID" "33"}}]
+           (sut/update-status (sut/new) {"NAME" "dax"
+                                         "BID" "33"})))
   )
 
 (t/deftest delete-market
-  (t/is (= {"dax" {::sut/epic "dax"}}
-           (sut/remove-epic {"dax" {::sut/epic "dax"}
-                               "omx" {::sut/epic "omx"}}
-                              {::sut/epic "omx"})))
+  (t/is (= [[] {"dax" {"NAME" "dax"}}]
+           (sut/remove-epic [[] {"dax" {"NAME" "dax"} "omx" {"NAME" "omx"}}] "omx")))
   )

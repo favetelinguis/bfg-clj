@@ -1,18 +1,17 @@
 (ns app.portfolio
   (:require
    [ig.command-executor :refer [->IgCommandExecutor]]
-   [core.event.error :as error]
    [clojure.core.async :as a]
    [com.stuartsierra.component :as component]
-   [core.portfolio.executor :as portfolio-executor]
-   [core.portfolio.rules :as portfolio-rules]))
+   [core.portfolio :as portfolio-thread]
+   [core.portfolio.rules :as rules]))
 
-(defrecord Portfolio [rx session]
+(defrecord Portfolio [rx rules-state]
   component/Lifecycle
   (start [this]
     (if rx
       this
-      (let [in-channel (portfolio-executor/start session)]
+      (let [in-channel (portfolio-thread/start rules-state)]
         (assoc this :rx in-channel))))
   (stop [this]
     (if rx
@@ -21,7 +20,4 @@
 
 (defn new [auth-context]
   (map->Portfolio
-   (let [impl ]
-     {:session (atom
-                (portfolio-rules/create-session
-                 (->IgCommandExecutor auth-context)))})))
+   {:rules-state (atom (rules/create-session (->IgCommandExecutor auth-context)))}))

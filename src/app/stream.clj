@@ -1,10 +1,9 @@
 (ns app.stream
   (:require [com.stuartsierra.component :as component]
             [ig.stream.connection :as stream]
-            [ig.market-cache :as market-cache]
-            [ig.stream.subscription :as subscription]))
+            [ig.market-cache :as market-cache]))
 
-(defrecord IgStream [auth-context connection state]
+(defrecord IgStream [auth-context connection market-cache-state]
   component/Lifecycle
   (start [this]
          (if connection
@@ -22,4 +21,4 @@
 (defn new
   [auth-context]
   (map->IgStream {:auth-context auth-context
-                  :state (atom (market-cache/new))}))
+                  :market-cache-state (atom (market-cache/new))}))

@@ -1,14 +1,10 @@
 (ns main
-  (:require [ring.adapter.jetty :refer [run-jetty]]
-            [com.stuartsierra.component :as component]
-            [clj-http.client :as client]
+  (:require [com.stuartsierra.component :as component]
             [ig.setup :as ig-auth]
             [config]
             [app.web.server :as server-component]
-            [app.market-generator :as market]
-            [app.command-executor :as command-executor]
-            [app.portfolio :as portfolio]
-            [app.stream :as stream]
+            [app.portfolio :as portfolio-component]
+            [app.stream :as stream-component]
             )
   (:gen-class))
 
@@ -18,13 +14,13 @@
   (component/system-map
 
    :stream
-   (stream/new auth-context)
+   (stream-component/new auth-context)
 
    :portfolio
-   (portfolio/new auth-context)
+   (portfolio-component/new auth-context)
 
    :web-server
-   (component/using (server-component/new-http-server-component port)
+   (component/using (server-component/new port)
                     [:stream :portfolio])))
 
 (defn -main

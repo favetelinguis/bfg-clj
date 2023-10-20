@@ -1,14 +1,6 @@
 ; Only one connection is allowed, max 40 subscriptions is allowed on that connection.
 (ns ig.stream.connection
-  (:require
-   [core.event.market :as market]
-   [meander.epsilon :as m]
-   [clojure.string :as str]
-   [com.stuartsierra.component :as component]
-   [clojure.spec.alpha :as s]
-   [core.event.error :as error])
-  (:import (com.lightstreamer.client ClientListener LightstreamerClient Subscription SubscriptionListener)
-           (java.util Arrays)))
+  (:import (com.lightstreamer.client ClientListener LightstreamerClient)))
 
 (def max-subscriptions 40)
 

@@ -1,16 +1,24 @@
 (ns core.events
-  (:require [clojure.spec.alpha :as s]
-            [core.event.account :as account]
-            [core.event.trade :as trade]
-            [core.event.market :as market]))
+  (:require [clojure.spec.alpha :as s]))
 
-(s/def ::kind #{::market/candle ::market/status-update ::account/update ::trade/updatel})
+(s/def ::epic string?)
 
-(defn create-event
-  "TODO can I validate all created events"
-  [kind base-event]
-  (when (s/valid? ::kind kind)
-    (merge base-event {::kind kind})))
+(s/def ::bid double?)
+(s/def ::offer double?)
+
+(s/def ::kind #{::candle
+                ::bid ; remove
+                ::ask ; remove
+                ::mid-price
+                ::balance
+                ::order-new
+                ::order-update
+                ::fill
+                ::position-new
+                ::position-update
+                ::position-exit})
+
+;; TODO define more complete specs for events
 
 (defn create-bid-event
   [epic bid]
@@ -18,8 +26,18 @@
    ::bid bid
    ::kind ::bid})
 
-(defn create-offer-event
-  [epic offer]
+(defn create-ask-event
+  [epic ask]
   {::epic epic
-   ::bid offer
-   ::kind ::offer})
+   ::ask ask
+   ::kind ::ask})
+
+(s/def ::message string?)
+(s/def ::type #{::parsing-error ::fatal})
+(s/def ::event (s/keys :req [::message
+                             ::type]))
+
+(defn create-fatal-error
+  [s]
+  {::type ::fatal
+   ::message s})

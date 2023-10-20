@@ -1,35 +1,14 @@
-;; TODO use below as starts
-;; (ns app.web.controllers
-;;   (:require
-;;    [ring.util.response :as resp]
-;;    [bfg.portfolio :as portfolio]))
-
-;; (defn create-market-subscription
-;;   [req]
-;;   (let [stream (-> req :application/stream :connection)
-;;         epic (get-in req [:params :epic])]
-;;     ;; Do the sideeffect
-;;     (resp/redirect "/subscription/list")))
-
-;; (defn query-portfolio
-;;   [req]
-;;   (let [*session (-> req :application/portfolio :session)
-;;         result (portfolio/get-all-events @*session)]))
-
 (ns app.web.controllers
-  (:require [com.stuartsierra.component :as component]
-            [ring.adapter.jetty :as jetty]
-            [compojure.core :refer [GET POST PUT DELETE routes]]
+  (:require [compojure.core :refer [GET POST PUT DELETE routes]]
             [ring.util.response :as response]
-            [ring.middleware.params :as params]
-            [ring.middleware.keyword-params :as keyword-params]
             [hiccup.page :as hp]
             [hiccup2.core :as h]
             [compojure.route :as route]
             [app.web.views :as views]
             [ig.stream.subscription :as subscription]
             [ig.stream.connection :as stream]
-            [clojure.core.async :as a]))
+            [clojure.core.async :as a]
+            [ig.market-cache :as market-cache]))
 
 (defn- page-title
   [title]
@@ -78,28 +57,28 @@
 
     (POST "/market/subscription" request
          (let [{:keys [epic]} (:params request)
-               {:keys [connection state]} (get-in request [:dependencies :stream])
+               {:keys [connection market-cache-state]} (get-in request [:dependencies :stream])
                {:keys [rx]} (get-in request [:dependencies :portfolio])
                ; TODO we should also subscribe to candle data here.
                ; TODO we should not be able to subscribe to something we already have subscribed to
                sub (subscription/new-market-subscription epic (fn [& more]
                                                                 (doseq [m more]
-                                                                  (a/>!! rx m))) state)]
+                                                                  (a/>!! rx m))) market-cache-state)]
            (stream/subscribe! connection sub)
            (response/redirect "/market/subscription/list" :see-other)))
 
     (DELETE "/market/:epic/subscription" request
          (let [{:keys [epic]} (:params request)
-               {:keys [connection]} (get-in request [:dependencies :stream])
+               {:keys [connection market-cache-state]} (get-in request [:dependencies :stream])
                subs (stream/get-subscriptions connection)
                sub (subscription/get-market-data-subscription subs epic)]
            (when sub
-             (stream/unsubscribe! connection sub))
+             (stream/unsubscribe! connection sub)
+             (swap! market-cache-state market-cache/remove-epic epic))
            (response/redirect "/market/subscription/list" :see-other)))
 
     (GET "/market/subscription/list" request
-         (let [{:keys [connection]} (get-in request [:dependencies :stream])
-               subs (stream/get-subscriptions connection)]
+         (let [{:keys [connection]} (get-in request [:dependencies :stream])]
            (-> connection
                stream/get-subscriptions
                subscription/get-subscribed-epics

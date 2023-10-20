@@ -1,5 +1,5 @@
 (ns ig.command-executor
-  (:require [core.command.executor :refer [CommandExecutor]]))
+  (:require [core.command :refer [CommandExecutor]]))
 
 (deftype IgCommandExecutor [auth-context]
     CommandExecutor

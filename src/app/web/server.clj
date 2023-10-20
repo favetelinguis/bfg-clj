@@ -1,14 +1,9 @@
 (ns app.web.server
   (:require [com.stuartsierra.component :as component]
             [ring.adapter.jetty :as jetty]
-            [compojure.core :refer [GET POST PUT DELETE routes]]
             [ring.middleware.params :as params]
             [ring.middleware.keyword-params :as keyword-params]
-            [hiccup.page :as hp]
-            [hiccup2.core :as h]
             [ring.logger :as logger]
-
-            [app.web.views :as views]
             [app.web.controllers :as controllers]))
 
 (defn wrap-dependencies
@@ -38,6 +33,6 @@
       (.stop server))
     (assoc this :web-server nil)))
 
-(defn new-http-server-component
+(defn new
   [port]
   (map->HttpServerComponent {:port port}))

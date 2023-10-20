@@ -1,14 +1,10 @@
 (ns ig.stream.item
   (:require
-   [ig.market-cache :as market]
+   [ig.market-cache :as market-cache]
    [meander.epsilon :as m]
    [clojure.string :as str]
-   [com.stuartsierra.component :as component]
    [clojure.spec.alpha :as s]
-   [core.event.error :as error]
-   [core.events :as event]
-   [core.event.account :as account])
-  )
+   [core.events :as e]))
 
 (defn market-item
   [epic]
@@ -35,6 +31,12 @@
 (def chart-candle-1min-item
   (partial chart-candle-item "1MINUTE"))
 
+(defn into-map
+  "taken an item-update java object and transform it into a clojure map for all changed fields and adds epic"
+  [item-update]
+  (let [name (get-epic (.getItemName item-update))
+        changed-fields (into {} (.getChangedFields item-update))]
+    (assoc changed-fields "NAME" name)))
 
 (defn market-item-update->market-update
   "Ensure that incomming data conforms to event structure.
@@ -51,8 +53,9 @@
   "
   [item-update]
   (let [epic (second (str/split (.getItemName item-update) #":"))
-        changed-fields (into {} (.getChangedFields item-update)) ; return an immutable java map so convert it to someting Clojure
-        result (m/match changed-fields
+        changed-fields (into {} (.getChangedFields item-update))]
+    (println changed-fields)
+    (m/match changed-fields
 
                  {"UPDATE_TIME" ?UPDATE_TIME
                   "MARKET_DELAY" ?MARKET_DELAY
@@ -60,57 +63,9 @@
                   "BID" ?BID
                   "OFFER" ?OFFER}
 
-                 {::market/update-time ?UPDATE_TIME
-                  ::market/market-delay ?MARKET_DELAY
-                  ::market/market-state ?MARKET_STATE
-                  ::market/bid ?BID ; we can delete this and only use candle for price
-                  ::market/offer ?OFFER ; we can delete this and only use candle for price
-                  ::market/type ::market/market-update
-                  ::market/epic epic})]))
-
-(defn market-item-update->bfg-account-update-event
-  [item-update]
-  (try
-       (let [account (second (str/split (.getItemName item-update) #":"))
-             changed-fields (into {} (.getChangedFields item-update)) ; return an immutable java map so convert it to someting Clojure
-             result (m/match changed-fields
-
-               {"AVAILABLE_CASH" ?AVAILABLE_CASH
-                "FUNDS" ?FUNDS
-                "MARGIN" ?MARGIN}
-
-               {::account/available-cash ?AVAILABLE_CASH
-                ::account/funds ?FUNDS
-                ::account/margin ?MARGIN
-                ::event/kind ::event/market-update
-                :account/account account})]
-         (if (s/valid? ::account/event result)
-           result
-          (error/create-fatal-error (str "Invalid account update: " result))))
-       (catch Throwable e (error/create-fatal-error (ex-message e)))))
-
-(defn market-item-update->bfg-trade-update-event
-  "TODO this is very wrong and do not handle the correct data, cant be used!"
-  [item-update]
-  (try
-       (let [epic (second (str/split (.getItemName item-update) #":"))
-             changed-fields (into {} (.getChangedFields item-update)) ; return an immutable java map so convert it to someting Clojure
-             result (m/match changed-fields
-
-               {"UPDATE_TIME" ?UPDATE_TIME
-                "MARKET_DELAY" ?MARKET_DELAY
-                "MARKET_STATE" ?MARKET_STATE
-                "BID" ?BID
-                "OFFER" ?OFFER}
-
-               {::market/update-time ?UPDATE_TIME
-                ::market/market-delay ?MARKET_DELAY
-                ::market/market-state ?MARKET_STATE
-                ::market/bid ?BID ; we can delete this and only use candle for price
-                ::market/offer ?OFFER ; we can delete this and only use candle for price
-                ::market/type :bfg.market/market-update
-                ::market/epic epic})]
-         (if (s/valid? :bfg.market/event result)
-           result
-          (error/create-fatal-error (str "Invalid market update: " result))))
-       (catch Throwable e (error/create-fatal-error (ex-message e)))))
+                 {::market-cache/update-time ?UPDATE_TIME
+                  ::market-cache/market-delay ?MARKET_DELAY
+                  ::market-cache/market-state ?MARKET_STATE
+                  ::market-cache/bid ?BID ; we can delete this and only use candle for price
+                  ::market-cache/offer ?OFFER ; we can delete this and only use candle for price
+                  ::market-cache/epic epic})))

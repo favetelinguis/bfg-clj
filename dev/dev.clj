@@ -14,9 +14,9 @@
 
 (def conf (config/load!))
 
-#_(def auth-context (ig-authv/create-session! conf))
+(def auth-context (ig-authv/create-session! conf))
 
-#_(set-init
+(set-init
   (fn [_]
     (let []
       (main/create-system
@@ -34,13 +34,14 @@
     (igsubscription/get-market-data-subscription
      (igstream/get-subscriptions connection)
      "IX.D.DAX.IFMM.IP"))
-  @(get-in system [:market-generator :state])
   (ig-authv/client! (igrest/open-order (config/load!)))
   (ig-authv/create-session! conf)
-  ,)
-
+  @(get-in system [:stream :market-cache-state])
+  (Double/parseDouble "2.3332")
 (client/request {:url     "https://google.com"
                  :async? true
                  :respond (fn [response] (println "response is:" response))
                  ; raise will be called for all non 2xx and 3xx responses
                  :raise (fn [exception] (println "exception message is: " (.getMessage exception)))})
+  ,)
+
