@@ -29,12 +29,13 @@
   the balance
   subscribe and unsubscribe button"
   [ms active-account-id subscribed-account-id]
-  (for [{:keys [accountId]} ms]
-    (cond
-      (= accountId active-account-id) [:li.text-red-600 accountId]
-      (= accountId subscribed-account-id) [:li.text-blue-600 accountId]
-      (= accountId active-account-id subscribed-account-id) [:li.text-green-600 accountId]
-      :else [:li accountId])))
+  (for [{:keys [accountId accountName balance currency]} ms]
+    (let [text (str accountName " has available " (:available balance) currency)]
+      (cond
+        (= accountId subscribed-account-id) [:li.text-blue-600 text]
+        (= accountId active-account-id) [:li.text-red-600 text]
+        (= accountId active-account-id subscribed-account-id) [:li.text-green-600 text]
+        :else [:li text]))))
 
 (defn account-main [ms active-account-id subscribed-account-id]
   (list (menu)
