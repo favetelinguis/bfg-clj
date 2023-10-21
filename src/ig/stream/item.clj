@@ -10,10 +10,11 @@
   [epic]
   (str "MARKET:" epic))
 
-(defn get-epic
+(defn get-name
   [item]
-  (second
-   (str/split item #":")))
+  (when item
+    (second
+     (str/split item #":"))))
 
 (defn trade-item
   [account-id]
@@ -34,7 +35,7 @@
 (defn into-map
   "taken an item-update java object and transform it into a clojure map for all changed fields and adds epic"
   [item-update]
-  (let [name (get-epic (.getItemName item-update))
+  (let [name (get-name (.getItemName item-update))
         changed-fields (into {} (.getChangedFields item-update))]
     (assoc changed-fields "NAME" name)))
 

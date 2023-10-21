@@ -8,7 +8,9 @@
             [ig.stream.subscription :as subscription]
             [ig.stream.connection :as stream]
             [clojure.core.async :as a]
-            [ig.market-cache :as market-cache]))
+            [ig.market-cache :as market-cache]
+            [ig.rest :as rest]
+            [ig.stream.item :as i]))
 
 (defn- page-title
   [title]
@@ -23,7 +25,7 @@
     [:meta {:charset "UTF-8"}]
     [:title title]
     (hp/include-js
-     ;; "https://cdn.tailwindcss.com?plugins=forms"
+     "https://cdn.tailwindcss.com?plugins=forms"
      "https://unpkg.com/htmx.org@1.9.4")
     [:body {:hx-boost "true"} body]]))
 
@@ -86,9 +88,20 @@
                ui-component
                ok)))
 
+    (GET "/account" request
+         (let [{:keys [http-client]} (:dependencies request)
+               {:keys [accounts]} @(http-client (rest/get-accounts))
+               {:keys [accountId]} @(http-client (rest/get-session-details))
+               {:keys [connection]} (get-in request [:dependencies :stream])
+               subs (stream/get-subscriptions connection)
+               sub (i/get-name
+                    (subscription/get-item
+                     (subscription/get-account-subscription subs)))]
+           (-> (views/account-main accounts accountId sub)
+               (layout {:title (page-title "Account")})
+               (ok))))
+
     (route/not-found
      (-> (views/not-found)
          (layout {:title (page-title "Error")})
-         (ok))
-
-     )))
+         (ok)))))

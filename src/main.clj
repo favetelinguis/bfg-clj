@@ -5,7 +5,8 @@
             [app.web.server :as server-component]
             [app.portfolio :as portfolio-component]
             [app.stream :as stream-component]
-            [org.httpkit.client :as client])
+            [org.httpkit.client :as client]
+            [cheshire.core :as json])
   (:gen-class))
 
 (defn create-http-client [{:keys [base-url apikey cst token]}]
@@ -18,21 +19,25 @@
                                       "CST" cst
                                       "X-SECURITY-TOKEN" token} headers)
                      } (fn [{:keys [status headers body error opts]}]
-                         (println "Request done with status " status "and body " body "or error " error)))))
+                         (if (= status 200)
+                           (json/decode body true)
+                           (do
+                             (println "Failure with status " status " error " error)))))))
 
 (defn create-system
   [{:keys [auth-context port]}]
-  (component/system-map
+  (let [http-client (create-http-client auth-context)]
+    (component/system-map
 
-   :stream
-   (stream-component/new auth-context)
+     :stream
+     (stream-component/new auth-context)
 
-   :portfolio
-   (portfolio-component/new (create-http-client auth-context))
+     :portfolio
+     (portfolio-component/new http-client)
 
-   :web-server
-   (component/using (server-component/new port)
-                    [:stream :portfolio])))
+     :web-server
+     (component/using (server-component/new port http-client)
+                      [:stream :portfolio]))))
 
 (defn -main
   [& [port]]

@@ -12,7 +12,7 @@
     (handler (assoc request :dependencies dependencies))))
 
 (defrecord HttpServerComponent
-    [port steam portfolio web-server]
+    [port steam portfolio http-client web-server]
   component/Lifecycle
   (start [this]
     (println "Starting HttpServerCompoent")
@@ -34,5 +34,6 @@
     (assoc this :web-server nil)))
 
 (defn new
-  [port]
-  (map->HttpServerComponent {:port port}))
+  [port http-client]
+  (map->HttpServerComponent {:port port
+                             :http-client http-client}))

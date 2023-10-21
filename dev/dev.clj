@@ -18,10 +18,9 @@
 
 (set-init
   (fn [_]
-    (let []
-      (main/create-system
-       {:port 3000
-        :auth-context auth-context}))))
+    (main/create-system
+     {:port 3000
+      :auth-context auth-context})))
 
 (comment
   (hv/html (devv/market-main))

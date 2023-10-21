@@ -49,3 +49,19 @@
   {:headers {"version"      "1"}
    :method :get
    :url     "/accounts/preferences"})
+
+(defn get-accounts []
+  {:headers {"version"      "1"}
+   :method :get
+   :url     "/accounts"})
+
+(defn set-acctive-account [account-id]
+  {:headers {"version"      "1"}
+   :method :put
+   :url     "/session"
+   :body (json/encode {"accountId" account-id})})
+
+(defn get-session-details []
+  {:headers {"version"      "1"}
+   :method :get
+   :url     "/session"})

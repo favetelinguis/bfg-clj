@@ -1,7 +1,8 @@
 (ns ig.stream.subscription
   (:require
    [ig.stream.item :as i]
-   [ig.market-cache :as market-cache])
+   [ig.market-cache :as market-cache]
+   [clojure.string :as str])
   (:import (com.lightstreamer.client Subscription SubscriptionListener)))
 
 (defn- new-subscription-listener [callback]
@@ -37,7 +38,8 @@
   "Will return item used for subscription, for example MARKET:<epic>
   Is represented as String[] seq is used to get Clojure representation"
   [subscription]
-  (first (seq (.getItems subscription))))
+  (when subscription
+    (first (seq (.getItems subscription)))))
 
 (defn get-market-data-subscription
   "Return the market item subscription for epic"
@@ -45,7 +47,12 @@
   (first
    (filter #(= (i/market-item epic) (get-item %)) subscriptions)))
 
+(defn get-account-subscription
+  [subscriptions]
+  (first
+   (filter #(str/includes? (get-item %) "ACCOUNT:") subscriptions)))
+
 (defn get-subscribed-epics
   "Will return seq of MARKET subscriptions "
   [subscriptions]
-  (map (comp i/get-epic get-item) subscriptions))
+  (map (comp i/get-name get-item) subscriptions))
