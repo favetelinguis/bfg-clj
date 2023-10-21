@@ -32,30 +32,20 @@
   ;;   :accountType "PHYSICAL"}]}
   [{:keys [base-url identifier password apikey]}]
   {:headers {"version"      "2"
+             "Accept" "application/json; charset=UTF-8"
+             "Content-Type" "application/json; charset=UTF-8"
              "x-ig-api-key" apikey}
-   :accept :json
-   :content-type :json
-   :method  :post
-   :socket-timeout 5000
-   :conn-timeout   5000
-   :as  :json ; Response is in json
    :url     (str base-url "/session")
-   :body    (json/generate-string {:identifier identifier :password password})}
+   :method :post
+   :body    (json/encode {:identifier identifier :password password})}
   )
 
-(defn open-order
-  [{:keys [base-url identifier password apikey]}]
-  {:headers {"version"      "2"
-             "x-ig-api-key" apikey}
-   :accept :json
-   :content-type :json
-   :method  :post
-   :socket-timeout 5000
-   :conn-timeout   5000
-   :as  :json ; Response is in json
-   :url     (str base-url "/session")
-   :body    (json/generate-string {:identifier identifier :password password})
-   :async? true
-   :respond (fn [response] (println "response is:" response))
-  ; raise will be called for all non 2xx and 3xx responses
-   :raise (fn [exception] (println "exception message is: " (.getMessage exception)))})
+(defn open-order [m]
+  {:headers {"version"      "1"}
+   :method :get
+   :url     "/accounts/preferences"})
+
+(defn close-order [m]
+  {:headers {"version"      "1"}
+   :method :get
+   :url     "/accounts/preferences"})

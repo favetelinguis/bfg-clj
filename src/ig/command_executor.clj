@@ -1,10 +1,12 @@
 (ns ig.command-executor
-  (:require [core.command :refer [CommandExecutor]]))
+  (:require
+   [ig.rest :as rest]
+   [core.command :refer [CommandExecutor]]))
 
-(deftype IgCommandExecutor [auth-context]
+(deftype IgCommandExecutor [client]
     CommandExecutor
   (open-working-order! [this order]
-    (println "Open new working order"))
+    (client (rest/open-order order)))
 
   (close-working-order! [this order]
-    (println "Close working order")))
+    (client (rest/close-order order))))

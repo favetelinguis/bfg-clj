@@ -10,7 +10,7 @@
             [ig.rest :as igrest]
             [clojure.spec.alpha :as ds]
             [cheshire.core :as djson]
-            [clj-http.client :as client]))
+            [org.httpkit.client :as client]))
 
 (def conf (config/load!))
 
@@ -38,10 +38,12 @@
   (ig-authv/create-session! conf)
   @(get-in system [:stream :market-cache-state])
   (Double/parseDouble "2.3332")
-(client/request {:url     "https://google.com"
-                 :async? true
-                 :respond (fn [response] (println "response is:" response))
-                 ; raise will be called for all non 2xx and 3xx responses
-                 :raise (fn [exception] (println "exception message is: " (.getMessage exception)))})
+;; https://rymndhng.github.io/2020/04/15/production-considerations-for-clj-http/
+@(client/request {:url     "https://google.com"
+                 :keep-alive 30000
+
+                 } (fn [{:keys [status headers body error opts]}]
+                     body))
   ,)
+
 

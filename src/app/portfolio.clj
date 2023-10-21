@@ -18,6 +18,6 @@
       (a/close! rx) ; closing the in-channel will cause the thread to exit
       (assoc this :rx nil))))
 
-(defn new [auth-context]
+(defn new [http-client]
   (map->Portfolio
-   {:rules-state (atom (rules/create-session (->IgCommandExecutor auth-context)))}))
+   {:rules-state (atom (rules/create-session (->IgCommandExecutor http-client)))}))

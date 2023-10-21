@@ -5,9 +5,20 @@
             [app.web.server :as server-component]
             [app.portfolio :as portfolio-component]
             [app.stream :as stream-component]
-            )
+            [org.httpkit.client :as client])
   (:gen-class))
 
+(defn create-http-client [{:keys [base-url apikey cst token]}]
+  (fn [{:keys [headers url]}]
+    (client/request {:url (str base-url url)
+                     :keep-alive 30000
+                     :headers (merge {"Accept" "application/json; charset=UTF-8"
+                                      "Content-Type" "application/json; charset=UTF-8"
+                                      "X-IG-API-KEY" apikey
+                                      "CST" cst
+                                      "X-SECURITY-TOKEN" token} headers)
+                     } (fn [{:keys [status headers body error opts]}]
+                         (println "Request done with status " status "and body " body "or error " error)))))
 
 (defn create-system
   [{:keys [auth-context port]}]
@@ -17,7 +28,7 @@
    (stream-component/new auth-context)
 
    :portfolio
-   (portfolio-component/new auth-context)
+   (portfolio-component/new (create-http-client auth-context))
 
    :web-server
    (component/using (server-component/new port)
