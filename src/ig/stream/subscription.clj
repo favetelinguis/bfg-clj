@@ -2,7 +2,8 @@
   (:require
    [ig.stream.item :as i]
    [ig.market-cache :as market-cache]
-   [clojure.string :as str])
+   [clojure.string :as str]
+   [core.events :as e])
   (:import (com.lightstreamer.client Subscription SubscriptionListener)))
 
 (defn- new-subscription-listener [callback]
@@ -34,6 +35,26 @@
                       (apply f events)))]
     (new-subscription item mode fields callback)))
 
+(defn new-account-subscription
+  [account-id f]
+  (let [item (i/account-item account-id)
+        mode "MERGE"
+        fields ["AVAILABLE_CASH"]
+        callback (fn [item-update] (let [m (i/into-map item-update)
+                                         balance (get m "AVAILABLE_CASH")
+                                         event (e/create-balance-event account-id (Double/parseDouble balance))]
+                                     (f event)))]
+    (new-subscription item mode fields callback)))
+
+(defn new-trade-subscription
+  [account-id f]
+  (let [item (i/trade-item account-id)
+        mode "DISTINCT"
+        fields ["CONFIRMS" "OPU" "WOU"] ; is WOU ever used?
+        callback (fn [item-update] (let [m (i/into-map item-update)]
+                                     (println m)))] ; TODO use f instead of println
+    (new-subscription item mode fields callback)))
+
 (defn get-item
   "Will return item used for subscription, for example MARKET:<epic>
   Is represented as String[] seq is used to get Clojure representation"
@@ -51,6 +72,12 @@
   [subscriptions]
   (first
    (filter #(str/includes? (get-item %) "ACCOUNT:") subscriptions)))
+
+(defn get-trade-subscription
+  ; TODO all the get fn can be made into one where the caller send in what to match on
+  [subscriptions]
+  (first
+   (filter #(str/includes? (get-item %) "TRADE:") subscriptions)))
 
 (defn get-subscribed-epics
   "Will return seq of MARKET subscriptions "

@@ -20,29 +20,32 @@
          [:form
           [:label {:for "search"} "Subscribe to epic:"]
           [:input#search {:name "epic" :type "search" :placeholder "Enter epic"}]
-          [:button {:hx-post "/market/subscription" :hx-target "#market-list"} "Start subscription"]]
-         [:div#market-list]]))
+          [:button {:hx-post "/market/subscription"
+                    :hx-target "#subscription-market-list"} "Start subscription"]]
+         [:div#subscription-market-list {:hx-get "/market/subscription/list"
+                                         :hx-trigger "load"}]]))
 
 (defn account-list
-  "TODO if its the active account
-  if im subscribed or not
-  the balance
-  subscribe and unsubscribe button"
-  [ms active-account-id subscribed-account-id]
+  "We only show and support the account that is defult and active for current session"
+  [ms active-account-id subscription-account-id]
   (for [{:keys [accountId accountName balance currency]} ms]
-    (let [text (str accountName " has available " (:available balance) currency)]
-      (cond
-        (= accountId subscribed-account-id) [:li.text-blue-600 text]
-        (= accountId active-account-id) [:li.text-red-600 text]
-        (= accountId active-account-id subscribed-account-id) [:li.text-green-600 text]
-        :else [:li text]))))
+    (when (= active-account-id accountId)
+      (let [text (str accountId accountName " has available " (:available balance) currency)
+            subscribe-button [:button {:hx-post (str "/account/" accountId "/subscription")
+                                       :hx-target "#account-list"} "Subscribe"]
+            unsubscribe-button [:button {:hx-delete (str "/account/" accountId "/subscription")
+                                         :hx-target "#account-list"} "End subscription"]]
+        (cond
+          (= accountId active-account-id subscription-account-id) [:li.text-green-600 text unsubscribe-button]
+          :else [:li text subscribe-button])))))
 
-(defn account-main [ms active-account-id subscribed-account-id]
+(defn account-main []
   (list (menu)
    [:main
     [:h1 "Handle account"]
     [:p "What would you like to do?"]
-    (account-list ms active-account-id subscribed-account-id)]))
+    [:div#account-list {:hx-get "/account/list"
+                        :hx-trigger "load"}]]))
 
 (defn portfolio-main []
   (list (menu)
@@ -54,8 +57,7 @@
   (for [m markets]
     [:li m
      [:button {:hx-delete (str "/market/" m "/subscription")
-               :hx-target "#market-list"
-               :hx-swap "outerHTML"} "End subscription"]]))
+               :hx-target "#subscription-market-list"} "End subscription"]]))
 
 (defn not-found []
   [:div

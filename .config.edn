@@ -1,4 +1,4 @@
-{:base-url   "https://demo-api.ig.com/gateway/deal"
+{:baseUrl   "https://demo-api.ig.com/gateway/deal"
  :identifier #ENV "IG_IDENTIFER"
  :password   #ENV "IG_PASSWORD"
  :apikey     #ENV "IG_DEMO_APIKEY"

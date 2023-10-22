@@ -9,10 +9,14 @@
             [cheshire.core :as json])
   (:gen-class))
 
-(defn create-http-client [{:keys [base-url apikey cst token]}]
-  (fn [{:keys [headers url]}]
-    (client/request {:url (str base-url url)
+(defn create-http-client [{:keys [baseUrl apikey cst token]}]
+  ; TODO make this into a component and move login/logout to start stop
+  ; TODO Make so one can send in custom callback but have one as default value how to :or work for default value?
+  (fn [{:keys [headers url method body]}]
+    (client/request {:url (str baseUrl url)
                      :keep-alive 30000
+                     :method method
+                     :body body
                      :headers (merge {"Accept" "application/json; charset=UTF-8"
                                       "Content-Type" "application/json; charset=UTF-8"
                                       "X-IG-API-KEY" apikey
@@ -22,7 +26,7 @@
                          (if (= status 200)
                            (json/decode body true)
                            (do
-                             (println "Failure with status " status " error " error)))))))
+                             (println "Failure with status " status " error " error " and body " body)))))))
 
 (defn create-system
   [{:keys [auth-context port]}]
@@ -30,7 +34,7 @@
     (component/system-map
 
      :stream
-     (stream-component/new auth-context)
+     (stream-component/new auth-context http-client)
 
      :portfolio
      (portfolio-component/new http-client)

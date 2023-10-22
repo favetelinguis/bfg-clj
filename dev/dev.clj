@@ -10,7 +10,8 @@
             [ig.rest :as igrest]
             [clojure.spec.alpha :as ds]
             [cheshire.core :as djson]
-            [org.httpkit.client :as client]))
+            [org.httpkit.client :as client]
+            [ig.rest :as rest]))
 
 (def conf (config/load!))
 
@@ -36,6 +37,7 @@
   (ig-authv/client! (igrest/open-order (config/load!)))
   (ig-authv/create-session! conf)
   @(get-in system [:stream :market-cache-state])
+  @((get-in system [:stream :http-client]) (rest/set-active-account "Z53ZLX"))
   (Double/parseDouble "2.3332")
 ;; https://rymndhng.github.io/2020/04/15/production-considerations-for-clj-http/
 @(client/request {:url     "https://google.com"

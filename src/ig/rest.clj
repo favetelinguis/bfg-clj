@@ -30,12 +30,12 @@
   ;;   :accountName "Börshandlade produkter",
   ;;   :preferred false,
   ;;   :accountType "PHYSICAL"}]}
-  [{:keys [base-url identifier password apikey]}]
+  [{:keys [baseUrl identifier password apikey]}]
   {:headers {"version"      "2"
              "Accept" "application/json; charset=UTF-8"
              "Content-Type" "application/json; charset=UTF-8"
              "x-ig-api-key" apikey}
-   :url     (str base-url "/session")
+   :url     (str baseUrl "/session")
    :method :post
    :body    (json/encode {:identifier identifier :password password})}
   )
@@ -55,13 +55,12 @@
    :method :get
    :url     "/accounts"})
 
-(defn set-acctive-account [account-id]
-  {:headers {"version"      "1"}
-   :method :put
-   :url     "/session"
-   :body (json/encode {"accountId" account-id})})
-
 (defn get-session-details []
   {:headers {"version"      "1"}
    :method :get
+   :url     "/session"})
+
+(defn logout []
+  {:headers {"version"      "1"}
+   :method :delete
    :url     "/session"})

@@ -13,10 +13,10 @@
     (onStatusChange [this status] (println "onStatusChange" status))))
 
 (defn create-connection
-  [{:keys [identifier cst token ls-endpoint]}]
+  [{:keys [identifier cst token lightstreamerEndpoint]}]
   (let [password (str "CST-" cst "|XST-" token)
         connection-listener (client-listener)
-        client (LightstreamerClient. ls-endpoint nil)]
+        client (LightstreamerClient. lightstreamerEndpoint nil)]
     (doto (.-connectionDetails client)
       (.setPassword password)
       (.setUser identifier))
@@ -46,4 +46,5 @@
     (.subscribe connection subscription)))
 
 (defn unsubscribe-all! [connection]
-  (str "TODO"))
+  (doseq [s (get-subscriptions connection)]
+    (unsubscribe! connection s)))

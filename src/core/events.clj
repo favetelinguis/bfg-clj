@@ -32,6 +32,12 @@
    ::ask ask
    ::kind ::ask})
 
+(defn create-balance-event
+  [account-id balance]
+  {::account-id account-id
+   ::balance balance
+   ::kind ::balance})
+
 (s/def ::message string?)
 (s/def ::type #{::parsing-error ::fatal})
 (s/def ::event (s/keys :req [::message
