@@ -11,7 +11,7 @@
       (try
         (loop []
           (when-let [event (a/<!! rx)]
-            (swap!  rules-state rules/update-session event)
+            (swap! rules-state rules/update-session event)
             (recur)))
         (catch Throwable e (swap! rules-state rules/update-session
                                   (e/create-fatal-error (ex-message e)))))

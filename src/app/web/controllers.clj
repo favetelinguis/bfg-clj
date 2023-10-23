@@ -117,7 +117,7 @@
              (response/redirect "/account/list" :see-other))))
 
     (GET "/account/list" request
-         (let [{:keys [http-client]} (:dependencies request)
+         (let [{:keys [http-client]} (get-in request [:dependencies :auth-context])
                {:keys [accounts]} @(http-client (rest/get-accounts))
                {:keys [accountId]} @(http-client (rest/get-session-details))
                {:keys [connection]} (get-in request [:dependencies :stream])

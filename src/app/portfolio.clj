@@ -6,18 +6,21 @@
    [core.portfolio :as portfolio-thread]
    [core.portfolio.rules :as rules]))
 
-(defrecord Portfolio [rx rules-state]
+(defrecord Portfolio [rx rules-state auth-context]
   component/Lifecycle
   (start [this]
     (if rx
       this
-      (let [in-channel (portfolio-thread/start rules-state)]
-        (assoc this :rx in-channel))))
+      (let [{:keys [http-client]} auth-context
+            rs (atom (rules/create-session (->IgCommandExecutor http-client)))
+            in-channel (portfolio-thread/start rules-state)]
+        (-> this
+         (assoc :rx in-channel)
+         (assoc :rules-state rs)))))
   (stop [this]
     (if rx
       (a/close! rx) ; closing the in-channel will cause the thread to exit
       (assoc this :rx nil))))
 
-(defn new [http-client]
-  (map->Portfolio
-   {:rules-state (atom (rules/create-session (->IgCommandExecutor http-client)))}))
+(defn new []
+  (map->Portfolio {}))

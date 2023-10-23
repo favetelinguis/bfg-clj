@@ -1,2 +1,2 @@
-((clojurescript-mode
-  (cider-clojure-cli-aliases . ":deq")))
+((clojure-mode
+  (cider-clojure-cli-aliases . ":dev")))

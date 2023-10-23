@@ -13,7 +13,7 @@
     (onStatusChange [this status] (println "onStatusChange" status))))
 
 (defn create-connection
-  [{:keys [identifier cst token lightstreamerEndpoint]}]
+  [{:keys [identifier]} {:keys [cst token lightstreamerEndpoint]}]
   (let [password (str "CST-" cst "|XST-" token)
         connection-listener (client-listener)
         client (LightstreamerClient. lightstreamerEndpoint nil)]
@@ -21,14 +21,12 @@
       (.setPassword password)
       (.setUser identifier))
     (doto client
-      (.addListener connection-listener)
-      )))
+      (.addListener connection-listener))))
 
 (defn connect! [connection]
   (.connect connection))
 
 (defn disconnect! [connection]
-  ;; (unsubscribe-all! connection)
   (.disconnect connection))
 
 (defn get-status [connection]

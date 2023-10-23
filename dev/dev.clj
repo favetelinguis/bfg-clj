@@ -1,8 +1,6 @@
 (ns dev
   (:require [com.stuartsierra.component.repl :refer [reset set-init start stop system]]
             [hiccup2.core :as hv]
-            [config]
-            [ig.setup :as ig-authv]
             [main]
             [app.web.views :as devv]
             [ig.stream.connection :as igstream]
@@ -13,15 +11,9 @@
             [org.httpkit.client :as client]
             [ig.rest :as rest]))
 
-(def conf (config/load!))
-
-(def auth-context (ig-authv/create-session! conf))
-
 (set-init
   (fn [_]
-    (main/create-system
-     {:port 3000
-      :auth-context auth-context})))
+    (main/create-system {:port 3000})))
 
 (comment
   (hv/html (devv/market-main))
@@ -31,11 +23,9 @@
   (ns-unalias 'dev 'igstream)
   (:market-generator system)
   (let [connection (:connection (:stream system))]
-    (igsubscription/get-market-data-subscription
-     (igstream/get-subscriptions connection)
-     "IX.D.DAX.IFMM.IP"))
-  (ig-authv/client! (igrest/open-order (config/load!)))
-  (ig-authv/create-session! conf)
+    ;; (igstream/get-subscriptions connection)
+    (igstream/get-status connection)
+    )
   @(get-in system [:stream :market-cache-state])
   @((get-in system [:stream :http-client]) (rest/set-active-account "Z53ZLX"))
   (Double/parseDouble "2.3332")

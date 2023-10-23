@@ -10,8 +10,8 @@
   (reify
     SubscriptionListener
     (onSubscription [this] (println "onSubscription"))
-    (onListenStart [this subscription] (println subscription))
-    (onListenEnd [this subscription] (println subscription))
+    ;; (onListenStart [this subscription] (println subscription))
+    ;; (onListenEnd [this subscription] (println subscription))
     (onItemUpdate [this item-update] (callback item-update))
     (onSubscriptionError [this code message] (println (str code ": " message)))))
 
@@ -30,9 +30,9 @@
         ; TODO remove bid offer and use candle stream as only source to reduce load
         fields ["UPDATE_TIME" "MARKET_DELAY" "MARKET_STATE" "BID" "OFFER"]
         callback (fn [item-update]
-                    (when-let [events (first
-                                       (swap! market-cache-state market-cache/update-status (i/into-map item-update)))]
-                      (apply f events)))]
+                   (when-let [events (first
+                                      (swap! market-cache-state market-cache/update-status (i/into-map item-update)))]
+                     (apply f events)))]
     (new-subscription item mode fields callback)))
 
 (defn new-account-subscription

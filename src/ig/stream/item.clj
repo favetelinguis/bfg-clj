@@ -55,7 +55,6 @@
   [item-update]
   (let [epic (second (str/split (.getItemName item-update) #":"))
         changed-fields (into {} (.getChangedFields item-update))]
-    (println changed-fields)
     (m/match changed-fields
 
                  {"UPDATE_TIME" ?UPDATE_TIME
