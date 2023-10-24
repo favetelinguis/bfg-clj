@@ -28,8 +28,8 @@
                           :join? false})]
         (assoc this :web-server http-server))))
   (stop [this]
-    (println "Stopping HttpServerComponent")
     (when-let [server (:web-server this)]
+      (println "Stopping HttpServerComponent")
       (.stop server))
     (assoc this :web-server nil)))
 

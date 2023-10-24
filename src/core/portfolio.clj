@@ -13,7 +13,7 @@
           (when-let [event (a/<!! rx)]
             (swap! rules-state rules/update-session event)
             (recur)))
+        (println "Shutting down Portfolio")
         (catch Throwable e (swap! rules-state rules/update-session
-                                  (e/create-fatal-error (ex-message e)))))
-      (println "Shutting down Portfolio"))
+                                  (e/create-fatal-error (ex-message e))))))
     rx))
