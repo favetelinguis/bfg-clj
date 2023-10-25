@@ -62,24 +62,14 @@
   (when subscription
     (first (seq (.getItems subscription)))))
 
-(defn get-market-data-subscription
-  "Return the market item subscription for epic"
-  [subscriptions epic]
-  (first
-   (filter #(= (i/market-item epic) (get-item %)) subscriptions)))
-
-(defn get-account-subscription
-  [subscriptions]
-  (first
-   (filter #(str/includes? (get-item %) "ACCOUNT:") subscriptions)))
-
-(defn get-trade-subscription
-  ; TODO all the get fn can be made into one where the caller send in what to match on
-  [subscriptions]
-  (first
-   (filter #(str/includes? (get-item %) "TRADE:") subscriptions)))
-
 (defn get-subscribed-epics
   "Will return seq of MARKET subscriptions "
   [subscriptions]
-  (map (comp i/get-name get-item) subscriptions))
+  (->> subscriptions
+      (map get-item)
+      (filter (fn [item] (str/includes? item "MARKET:")))
+      (map i/get-name)))
+
+(defn get-subscriptions-matching
+  [subscriptions item]
+  (filter (fn [subscription] (= (get-item subscription) item)) subscriptions))

@@ -10,7 +10,8 @@
             [clojure.core.async :as a]
             [ig.market-cache :as market-cache]
             [ig.rest :as rest]
-            [ig.stream.item :as item]))
+            [ig.stream.item :as item]
+            [ig.stream.item :as i]))
 
 (defn- page-title
   [title]
@@ -62,18 +63,19 @@
                {:keys [connection market-cache-state]} (get-in request [:dependencies :stream])
                {:keys [rx]} (get-in request [:dependencies :portfolio])
                ; TODO we should also subscribe to candle data here.
-               ; TODO we should not be able to subscribe to something we already have subscribed to
+               subscriptions (stream/get-subscriptions connection)
                sub (subscription/new-market-subscription epic (fn [& more]
                                                                 (doseq [m more]
                                                                   (a/>!! rx m))) market-cache-state)]
-           (stream/subscribe! connection sub)
+           (when (empty? (subscription/get-subscriptions-matching subscriptions (i/market-item epic)))
+             (stream/subscribe! connection sub))
            (response/redirect "/market/subscription/list" :see-other)))
 
     (DELETE "/market/:epic/subscription" request
          (let [{:keys [epic]} (:params request)
                {:keys [connection market-cache-state]} (get-in request [:dependencies :stream])
                subs (stream/get-subscriptions connection)
-               sub (subscription/get-market-data-subscription subs epic)]
+               sub (first (subscription/get-subscriptions-matching subs (i/market-item epic)))]
            (when sub
              (stream/unsubscribe! connection sub)
              (swap! market-cache-state market-cache/remove-epic epic))
@@ -97,20 +99,20 @@
          (let [{:keys [account-id]} (:params request)
                {:keys [connection]} (get-in request [:dependencies :stream])
                {:keys [rx]} (get-in request [:dependencies :portfolio])
-               ; TODO we should not be able to subscribe to something we already have subscribed to
+               subscriptions (stream/get-subscriptions connection)
                account-sub (subscription/new-account-subscription account-id #(a/>!! rx %))
                trade-sub (subscription/new-trade-subscription account-id #(a/>!! rx %))]
-           (do
+           (when (empty? (subscription/get-subscriptions-matching subscriptions (i/account-item account-id)))
              (stream/subscribe! connection account-sub)
-             (stream/subscribe! connection trade-sub)
-             (response/redirect "/account/list" :see-other))))
+             (stream/subscribe! connection trade-sub))
+           (response/redirect "/account/list" :see-other)))
 
     (DELETE "/account/:account-id/subscription" request
          (let [{:keys [account-id]} (:params request)
                {:keys [connection]} (get-in request [:dependencies :stream])
                subs (stream/get-subscriptions connection)
-               account-sub (subscription/get-account-subscription subs)
-               trade-sub (subscription/get-trade-subscription subs)]
+               account-sub (first (subscription/get-subscriptions-matching subs (i/account-item account-id)))
+               trade-sub (first (subscription/get-subscriptions-matching subs (i/trade-item account-id)))]
            (do
              (stream/unsubscribe! connection account-sub)
              (stream/unsubscribe! connection trade-sub)
@@ -122,7 +124,8 @@
                {:keys [accountId]} @(http-client (rest/get-session-details))
                {:keys [connection]} (get-in request [:dependencies :stream])
                sub (-> (stream/get-subscriptions connection)
-                       (subscription/get-account-subscription)
+                       (subscription/get-subscriptions-matching (i/account-item accountId))
+                       (first)
                        (subscription/get-item)
                        (item/get-name))]
            (-> (views/account-list accounts accountId sub)
