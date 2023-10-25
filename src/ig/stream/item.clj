@@ -57,15 +57,15 @@
         changed-fields (into {} (.getChangedFields item-update))]
     (m/match changed-fields
 
-                 {"UPDATE_TIME" ?UPDATE_TIME
-                  "MARKET_DELAY" ?MARKET_DELAY
-                  "MARKET_STATE" ?MARKET_STATE
-                  "BID" ?BID
-                  "OFFER" ?OFFER}
+      {"UPDATE_TIME" ?UPDATE_TIME
+       "MARKET_DELAY" ?MARKET_DELAY
+       "MARKET_STATE" ?MARKET_STATE
+       "BID" ?BID
+       "OFFER" ?OFFER}
 
-                 {::market-cache/update-time ?UPDATE_TIME
-                  ::market-cache/market-delay ?MARKET_DELAY
-                  ::market-cache/market-state ?MARKET_STATE
-                  ::market-cache/bid ?BID ; we can delete this and only use candle for price
-                  ::market-cache/offer ?OFFER ; we can delete this and only use candle for price
-                  ::market-cache/epic epic})))
+      {::market-cache/update-time ?UPDATE_TIME
+       ::market-cache/market-delay ?MARKET_DELAY
+       ::market-cache/market-state ?MARKET_STATE
+       ::market-cache/bid ?BID ; we can delete this and only use candle for price
+       ::market-cache/offer ?OFFER ; we can delete this and only use candle for price
+       ::market-cache/epic epic})))

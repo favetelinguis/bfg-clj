@@ -9,7 +9,7 @@
   (close-working-order! [this order] "Used to close a working order"))
 
 (deftype DummyCommandExecutor []
-    CommandExecutor
+  CommandExecutor
   (open-working-order! [this order]
     (println "Open new working order"))
 

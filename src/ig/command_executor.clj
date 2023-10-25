@@ -4,7 +4,7 @@
    [core.command :refer [CommandExecutor]]))
 
 (deftype IgCommandExecutor [client]
-    CommandExecutor
+  CommandExecutor
   (open-working-order! [this order]
     (client (rest/open-order order)))
 

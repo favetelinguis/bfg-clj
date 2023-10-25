@@ -3,12 +3,9 @@
 
 (s/def ::epic string?)
 
-(s/def ::bid double?)
-(s/def ::offer double?)
+;; TODO define more complete specs for events
 
 (s/def ::kind #{::candle
-                ::bid ; remove
-                ::ask ; remove
                 ::mid-price
                 ::balance
                 ::order-new
@@ -18,19 +15,21 @@
                 ::position-update
                 ::position-exit})
 
-;; TODO define more complete specs for events
+(defn create-candle-event
+  [epic o h l c t]
+  {::name epic
+   ::open o
+   ::high h
+   ::low l
+   ::close c
+   ::time t
+   ::kind ::candle})
 
-(defn create-bid-event
-  [epic bid]
-  {::epic epic
-   ::bid bid
-   ::kind ::bid})
-
-(defn create-ask-event
-  [epic ask]
-  {::epic epic
-   ::ask ask
-   ::kind ::ask})
+(defn create-mid-price-event
+  [epic p]
+  {::name epic
+   ::price p
+   ::kind ::mid-price})
 
 (defn create-balance-event
   [account-id balance]

@@ -16,8 +16,8 @@
             rs (atom (rules/create-session (command/->DummyCommandExecutor)))
             in-channel (portfolio-thread/start rs)]
         (-> this
-         (assoc :rx in-channel)
-         (assoc :rules-state rs)))))
+            (assoc :rx in-channel)
+            (assoc :rules-state rs)))))
   (stop [this]
     (when rx
       (a/close! rx))

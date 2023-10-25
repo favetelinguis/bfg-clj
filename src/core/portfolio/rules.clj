@@ -6,26 +6,30 @@
 
 (def rules
   (o/ruleset
-   {
-    ::bid-update
+   {::mid-price-update
     [:what
      [::executors ::command c]
-     [epic ::e/bid bid]
+     [epic ::e/mid-price price]
      :then
-     (command/open-working-order! c bid)]
+     (command/open-working-order! c price)]
 
-    ::ask-update
+    ::candle-update
     [:what
      [::executors ::command c]
-     [epic ::e/ask ask]
+     [epic ::e/candle candle]
      :then
-     (command/close-working-order! c ask)]
+     (command/close-working-order! c candle)]
 
-    ::get-bid-ask-all-markets
+    ::balance-update
     [:what
-     [epic ::e/bid bid]
-     [epic ::e/ask ask]]
-    }))
+     [::executors ::command c]
+     [epic ::e/balance balance]
+     :then
+     (command/close-working-order! c balance)]
+
+    ::get-test
+    [:what
+     [epic ::e/mid-price price]]}))
 
 (defn create-session
   "command-executor is an impl of protocol CommandExecutor"
@@ -40,9 +44,9 @@
 (defn update-session
   [session {:keys [::e/kind ::e/epic ::e/account] :as event}]
   (let [to-insert (case kind
-                    ::e/bid [epic kind event]
-                    ::e/ask [epic kind event]
+                    ::e/mid-price [epic kind event]
                     ::e/candle [epic kind event]
+                    ::e/balance [account kind event]
                     ; TODO add all event kinds
                     [::event ::unknown event])]
     (-> session

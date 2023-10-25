@@ -1,7 +1,6 @@
 (ns core.indicators.ohlc-series
   (:require [clojure.spec.alpha :as s]
-            [core.indicators.time-series :as ts]
-            ))
+            [core.indicators.time-series :as ts]))
 
 (s/def ::id keyword?)
 (s/def ::price (s/double-in :min 0. :max 100000.0))

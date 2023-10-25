@@ -1,11 +1,10 @@
 (ns core.indicators.heikin-ashi-series-test
   (:require [clojure.test :refer :all])
   (:require
-    [core.indicators.heikin-ashi-series :as ha]
-    [core.data-test :as data]
-    [core.indicators.ohlc-series :as ohlc]
-    [core.indicators.time-series :as ts]
-    )
+   [core.indicators.heikin-ashi-series :as ha]
+   [core.data-test :as data]
+   [core.indicators.ohlc-series :as ohlc]
+   [core.indicators.time-series :as ts])
   (:import (java.time Instant)))
 
 (def ha-series (ha/make-heikin-ashi-series data/dax-bar-series-14))
@@ -32,7 +31,7 @@
   (is (= 8 (ha/num-consecutive-same-direction ha-series))))
 
 (deftest get-first-with-same-direction-test
-  (is (= { :c 15034.9 :o 15029.368750000001 :h 15060.4 :l 15018.9}
+  (is (= {:c 15034.9 :o 15029.368750000001 :h 15060.4 :l 15018.9}
          (select-keys (ha/get-first-with-same-direction ha-series) [:o :h :l :c]))))
 
 (deftest is-entry-bar-test

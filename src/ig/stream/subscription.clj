@@ -28,10 +28,20 @@
   (let [item (i/market-item epic)
         mode "MERGE"
         ; TODO remove bid offer and use candle stream as only source to reduce load
-        fields ["UPDATE_TIME" "MARKET_DELAY" "MARKET_STATE" "BID" "OFFER"]
+        fields ["UPDATE_TIME" "MARKET_DELAY" "MARKET_STATE"]
         callback (fn [item-update]
                    (when-let [events (first
                                       (swap! market-cache-state market-cache/update-status (i/into-map item-update)))]
+                     (apply f events)))]
+    (new-subscription item mode fields callback)))
+
+(defn new-candle-subscription
+  [item f market-cache-state]
+  (let [mode "MERGE"
+        fields ["OFR_OPEN", "OFR_HIGH", "OFR_LOW", "OFR_CLOSE", "BID_OPEN", "BID_HIGH", "BID_LOW", "BID_CLOSE", "CONS_END", "UTM"]
+        callback (fn [item-update]
+                   (when-let [events (first
+                                      (swap! market-cache-state market-cache/update-candle (i/into-map item-update)))]
                      (apply f events)))]
     (new-subscription item mode fields callback)))
 
@@ -66,9 +76,9 @@
   "Will return seq of MARKET subscriptions "
   [subscriptions]
   (->> subscriptions
-      (map get-item)
-      (filter (fn [item] (str/includes? item "MARKET:")))
-      (map i/get-name)))
+       (map get-item)
+       (filter (fn [item] (str/includes? item "MARKET:")))
+       (map i/get-name)))
 
 (defn get-subscriptions-matching
   [subscriptions item]

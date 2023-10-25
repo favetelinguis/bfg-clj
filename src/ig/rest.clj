@@ -37,8 +37,7 @@
              "x-ig-api-key" apikey}
    :url     (str baseUrl "/session")
    :method :post
-   :body    (json/encode {:identifier identifier :password password})}
-  )
+   :body    (json/encode {:identifier identifier :password password})})
 
 (defn open-order [m]
   {:headers {"version"      "1"}

@@ -33,15 +33,17 @@
   (.getStatus connection))
 
 (defn unsubscribe!
-  [connection subscription]
-  (.unsubscribe connection subscription))
+  [connection & subscriptions]
+  (doseq [subscription subscriptions]
+    (.unsubscribe connection subscription)))
 
 (defn get-subscriptions [connection]
   (.getSubscriptions connection))
 
-(defn subscribe! [connection subscription]
-  (when (> max-subscriptions (count (get-subscriptions connection)))
-    (.subscribe connection subscription)))
+(defn subscribe! [connection & subscriptions]
+  (when (> max-subscriptions (+ (count subscriptions) (count (get-subscriptions connection))))
+    (doseq [subscription subscriptions]
+      (.subscribe connection subscription))))
 
 (defn unsubscribe-all! [connection]
   (doseq [s (get-subscriptions connection)]

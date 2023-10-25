@@ -21,9 +21,9 @@
   "If previous-bar is nil we return the first tr value"
   (if prior-bar
     (max
-      (- (:h current-bar) (:l current-bar))
-      (abs (- (:h current-bar) (:c prior-bar)))
-      (abs (- (:l current-bar) (:c prior-bar))))
+     (- (:h current-bar) (:l current-bar))
+     (abs (- (:h current-bar) (:c prior-bar)))
+     (abs (- (:l current-bar) (:c prior-bar))))
     (- (:h current-bar) (:l current-bar))))
 
 (defn make-atr-series
@@ -35,9 +35,8 @@
     (let [bars (map second (reverse ohlc-series))
           newest-bar (select-keys (ts/get-first ohlc-series) [:time :id])
           initial-atr (/
-                        (reduce + (map #(apply calculate-tr %) (partition 2 1 (cons nil bars))))
-                        periods
-                        )
+                       (reduce + (map #(apply calculate-tr %) (partition 2 1 (cons nil bars))))
+                       periods)
           atr-bar (merge newest-bar {:atr initial-atr})]
       (ts/add (ts/make-empty) atr-bar))))
 
@@ -50,9 +49,8 @@
   (let [current-tr (calculate-tr prior-bar current-bar)
         atr (/ (+ (* (:atr (ts/get-first atr-series)) (- periods 1)) current-tr) periods)]
     (merge
-      (select-keys current-bar [:time :id])
-      {:atr atr})
-    ))
+     (select-keys current-bar [:time :id])
+     {:atr atr})))
 
 (defn add-atr-bar
   [atr-series current-ohlc-bar prior-ohlc-bar]

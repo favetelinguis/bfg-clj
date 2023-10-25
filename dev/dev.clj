@@ -23,8 +23,8 @@
   (ns-unalias 'dev 'igstream)
   (:market-generator system)
   (let [connection (:connection (:stream system))]
-    ;; (igstream/get-subscriptions connection)
-    (igstream/get-status connection)
+    (igstream/get-subscriptions connection)
+    ;; (igstream/get-status connection)
     )
   @(get-in system [:stream :market-cache-state])
   @((get-in system [:stream :http-client]) (rest/set-active-account "Z53ZLX"))

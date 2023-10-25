@@ -1,8 +1,8 @@
 (ns app.auth-context
   (:require [com.stuartsierra.component :as component]
-    [ig.rest :as rest]
-    [org.httpkit.client :as client]
-    [cheshire.core :as json]))
+            [ig.rest :as rest]
+            [org.httpkit.client :as client]
+            [cheshire.core :as json]))
 
 (defn create-session!
   "ig-config -> auth-context"
@@ -23,23 +23,22 @@
                                       "Content-Type" "application/json; charset=UTF-8"
                                       "X-IG-API-KEY" apikey
                                       "CST" cst
-                                      "X-SECURITY-TOKEN" token} headers)
-                     } (fn [{:keys [status headers body error opts]}]
-                         (if (< status 299)
-                           (json/decode body true)
-                           (do
-                             (println "Failure with status " status " error " error " and body " body)))))))
+                                      "X-SECURITY-TOKEN" token} headers)} (fn [{:keys [status headers body error opts]}]
+                                                                            (if (< status 299)
+                                                                              (json/decode body true)
+                                                                              (do
+                                                                                (println "Failure with status " status " error " error " and body " body)))))))
 
 (defrecord AuthContext [http-client session config]
   component/Lifecycle
   (start [this]
-         (if http-client
-           this
-           (let [session-details (create-session! (:data config))
-                 c (create-http-client (:data config) session-details)]
-             (-> this
-                 (assoc :session session-details)
-                 (assoc :http-client c)))))
+    (if http-client
+      this
+      (let [session-details (create-session! (:data config))
+            c (create-http-client (:data config) session-details)]
+        (-> this
+            (assoc :session session-details)
+            (assoc :http-client c)))))
   (stop [this]
     (if http-client
       (do

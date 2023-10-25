@@ -10,8 +10,7 @@
   (list (menu)
         [:main
          [:h1 "Hello Hiccup Page with Routing!"]
-         [:p "What would you like to do?"]
-         ]))
+         [:p "What would you like to do?"]]))
 
 (defn market-main []
   (list (menu)
@@ -41,11 +40,11 @@
 
 (defn account-main []
   (list (menu)
-   [:main
-    [:h1 "Handle account"]
-    [:p "What would you like to do?"]
-    [:div#account-list {:hx-get "/account/list"
-                        :hx-trigger "load"}]]))
+        [:main
+         [:h1 "Handle account"]
+         [:p "What would you like to do?"]
+         [:div#account-list {:hx-get "/account/list"
+                             :hx-trigger "load"}]]))
 
 (defn portfolio-main []
   (list (menu)

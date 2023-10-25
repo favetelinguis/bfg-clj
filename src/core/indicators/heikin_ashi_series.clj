@@ -17,8 +17,7 @@
   {:c (/ (reduce + ((juxt :o :h :l :c) current-bar)) 4)
    :o (/ (+ (:o current-bar) (:c current-bar)) 2)
    :h (apply max ((juxt :o :h :c) current-bar))
-   :l (apply max ((juxt :o :l :c) current-bar))
-   })
+   :l (apply max ((juxt :o :l :c) current-bar))})
 
 (defn calculate-current-ha-bar
   [previous-ha-bar current-price-bar]
@@ -29,8 +28,7 @@
     {:c hac
      :o hao
      :h hah
-     :l hal
-     }))
+     :l hal}))
 
 (defn calculate-heikin-ashi-bar
   "
@@ -39,10 +37,10 @@
   "
   [heikin-ashi-series current-price-bar]
   (merge
-    (select-keys current-price-bar [:id :time])                   ; add id and time from original bar
-    (if-not (empty? heikin-ashi-series)
-      (calculate-current-ha-bar (ts/get-first heikin-ashi-series) current-price-bar)
-      (calculate-first-ha-bar current-price-bar))))
+   (select-keys current-price-bar [:id :time])                   ; add id and time from original bar
+   (if-not (empty? heikin-ashi-series)
+     (calculate-current-ha-bar (ts/get-first heikin-ashi-series) current-price-bar)
+     (calculate-first-ha-bar current-price-bar))))
 
 (def make-heikin-ashi-series (ts/make-indicator-series calculate-heikin-ashi-bar))
 
@@ -70,16 +68,13 @@
   (if (empty? ha-series)
     0
     (let [num-same (count
-                     (take-while #(apply same-direction? %) (partition 2 1 (map second ha-series))))]
-      (+ 1 num-same))
-    ))
+                    (take-while #(apply same-direction? %) (partition 2 1 (map second ha-series))))]
+      (+ 1 num-same))))
 
 (defn get-first-with-same-direction
   [ha-series]
   (let [num-same (num-consecutive-same-direction ha-series)]
-    (second (last (take num-same ha-series))))
-  )
-
+    (second (last (take num-same ha-series)))))
 
 (def max-body-percentage 0.4)
 (def max-wick-difference-percentage 0.1)
@@ -97,8 +92,7 @@
         wick-range-difference (abs (- top-wick-range bottom-wick-range))
         total-wick-range (+ top-wick-range bottom-wick-range)]
     (and
-      (not (zero? total-range))
-      (not (zero? total-wick-range))
-      (> max-body-percentage (/ body-range total-range))
-      (> max-wick-difference-percentage (/ wick-range-difference total-wick-range))
-      )))
+     (not (zero? total-range))
+     (not (zero? total-wick-range))
+     (> max-body-percentage (/ body-range total-range))
+     (> max-wick-difference-percentage (/ wick-range-difference total-wick-range)))))

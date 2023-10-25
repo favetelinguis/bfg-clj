@@ -51,9 +51,9 @@
   [indicator-fn]
   (fn [time-series]
     (reduce
-      (fn [agg bar] (add agg (indicator-fn agg bar)))
-      (make-empty)
-      (map second (reverse time-series)))))
+     (fn [agg bar] (add agg (indicator-fn agg bar)))
+     (make-empty)
+     (map second (reverse time-series)))))
 
 (defn add-indicator-bar
   "Bars need to be from oldest to newest that is the reverse order then what the resulting timeseries will be"
@@ -61,9 +61,9 @@
   (fn
     [time-series & bars]
     (reduce
-      (fn [agg bar] (add agg (indicator-fn agg bar)))
-      time-series
-      bars)))
+     (fn [agg bar] (add agg (indicator-fn agg bar)))
+     time-series
+     bars)))
 
 (defn get-at
   [ts instant]
