@@ -1,9 +1,9 @@
 (ns core.indicators.atr-series-test
   (:require [clojure.test :refer :all])
   (:require
-   [core.data-test :as data]
+   [data-test :as data]
    [core.indicators.atr-series :as atr]
-   [bfg.indicators.time-series :as ts]))
+   [core.indicators.time-series :as ts]))
 
 (deftest atr-test
   (is (= 31.550531214683158

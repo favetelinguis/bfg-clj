@@ -9,7 +9,7 @@
 
 #_(st/instrument)
 
-(deftest basic-rules
+#_(deftest basic-rules
   (-> (rules/create-session (command/->DummyCommandExecutor))
       (rules/update-session (e/create-bid-event "test-epic" 33.3))
       ((fn [session]

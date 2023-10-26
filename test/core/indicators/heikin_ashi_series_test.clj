@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all])
   (:require
    [core.indicators.heikin-ashi-series :as ha]
-   [core.data-test :as data]
+   [data-test :as data]
    [core.indicators.ohlc-series :as ohlc]
    [core.indicators.time-series :as ts])
   (:import (java.time Instant)))

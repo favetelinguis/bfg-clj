@@ -1,6 +1,6 @@
 (ns core.indicators.time-series-test
   (:require [core.indicators.time-series :as ts]
-            [core.data-test :as data])
+            [data-test :as data])
   (:require [clojure.test :refer :all])
   (:import (java.time Instant)))
 
