@@ -33,6 +33,6 @@
       (.stop server))
     (assoc this :web-server nil)))
 
-(defn new
+(defn make
   [port]
   (map->HttpServerComponent {:port port}))

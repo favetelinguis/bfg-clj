@@ -1,7 +1,9 @@
-(ns app.web.views)
+(ns app.web.views
+  (:require [core.signal :as signal]))
 
 (defn menu []
   [:nav
+   [:a {:href "./"} "Home"]
    [:a {:href "./market"} "Handle markets"]
    [:a {:href "./portfolio"} "View portfolio"]
    [:a {:href "./account"} "Handle account"]])
@@ -10,7 +12,9 @@
   (list (menu)
         [:main
          [:h1 "Hello Hiccup Page with Routing!"]
-         [:p "What would you like to do?"]]))
+         [:p "What would you like to do?"]
+         [:div#signal-list {:hx-get "/signal/list"
+                            :hx-trigger "load"}]]))
 
 (defn market-main []
   (list (menu)
@@ -57,6 +61,21 @@
     [:li m
      [:button {:hx-delete (str "/market/" m "/subscription")
                :hx-target "#subscription-market-list"} "End subscription"]]))
+
+(defn signal-list
+  "TODO should not be able to subscribe the same strategy to the same market "
+  [signals markets]
+  (for [{:keys [name id state]} signals]
+    [:li name
+     [:form
+      (if (= state ::signal/active)
+        [:label.text-green-600 {:for "markets"} "Subscribed markets"]
+        [:label {:for "markets"} "Subscribed markets"])
+      [:select#markets {:name "epic"}
+       (for [market markets]
+         [:option {:value market} market])]
+      [:button {:hx-put (str "/signal/" id)
+                :hx-target "#signal-list"} "Activate signa"]]]))
 
 (defn not-found []
   [:div

@@ -22,5 +22,5 @@
         (assoc this :connection nil))
       this)))
 
-(defn new []
+(defn make []
   (map->IgStream {:market-cache-state (atom (market-cache/make))}))

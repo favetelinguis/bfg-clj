@@ -1,19 +1,36 @@
 (ns core.portfolio.rules-test
   (:require [core.portfolio.rules :as rules]
             [core.command :as command]
-            [core.events :as e])
+            [core.events :as e]
+            [ig.stream.item :as i]
+            [core.signal :as signal])
   (:require
    [clojure.spec.test.alpha :as st]
    [clojure.test :refer :all]
    [odoyle.rules :as o]))
 
+(deftest updating-facts
+  (-> (reduce o/add-rule (o/->session)
+              (o/ruleset
+               {::updating-facts
+                [:what
+                 [y ::right b]]}))
+      (#(reduce (fn [session {:keys [::id] :as vals}] (o/insert session id vals)) % [{::id ::bob ::right "blue"} {::id ::bob ::right "blue"}]))
+      (o/insert ::bob {::id ::bob ::right "blue"})
+      (o/insert ::yair {::id ::yair ::right ::zach})
+      o/fire-rules
+      ((fn [session]
+         (is (= 4 (count (o/query-all session ::updating-facts))))
+         session))))
 #_(st/instrument)
 
-#_(deftest basic-rules
-  (-> (rules/create-session (command/->DummyCommandExecutor))
-      (rules/update-session (e/create-bid-event "test-epic" 33.3))
+(deftest signals-can-get-activated
+  (-> (rules/create-session (command/->DummyCommandExecutor) [(signal/make-dummy-signal "test signal" "test-id")])
+      (rules/activate-signal-for-market "test-id" "dax")
       ((fn [session]
-         (is (o/contains? session "test-epic" ::e/bid))))))
+         (is (= ::signal/active (-> (rules/get-signals session)
+                                    first
+                                    :state)))))))
 
 ; BELOW ARE OLD TEST THAT I MIGHT WANT INSPIRATION FROM AND THEN DELETE
 ;; (defn debug-rules []

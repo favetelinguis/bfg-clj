@@ -46,6 +46,6 @@
         (assoc this :http-client nil))
       this)))
 
-(defn new
+(defn make
   []
   (map->AuthContext {}))

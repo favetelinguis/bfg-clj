@@ -11,7 +11,9 @@
             [ig.market-cache :as market-cache]
             [ig.rest :as rest]
             [ig.stream.item :as item]
-            [ig.stream.item :as i]))
+            [ig.stream.item :as i]
+            [core.portfolio.rules :as rules]
+            [core.signal :as signal]))
 
 (defn- page-title
   [title]
@@ -133,6 +135,23 @@
        (-> (views/account-list accounts accountId sub)
            ui-component
            ok)))
+
+   (GET "/signal/list" request
+     (let [{:keys [rules-state]} (get-in request [:dependencies :portfolio])
+           {:keys [connection]} (get-in request [:dependencies :stream])
+           markets (-> (stream/get-subscriptions connection)
+                       (subscription/get-subscribed-epics))
+           strategies (rules/get-signals @rules-state)]
+       (-> (views/signal-list strategies markets)
+           (ui-component)
+           (ok))))
+
+   (PUT "/signal/:id" request
+     (let [{:keys [id epic]} (:params request)
+           {:keys [rules-state]} (get-in request [:dependencies :portfolio])]
+       (when (and epic id)
+         (swap! rules-state rules/activate-signal-for-market id epic)
+         (response/redirect "/signal/list" :see-other))))
 
    (route/not-found
     (-> (views/not-found)

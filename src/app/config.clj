@@ -23,6 +23,6 @@
         (assoc this :data c))))
   (stop [this] this))
 
-(defn new
+(defn make
   []
   (map->Config {}))

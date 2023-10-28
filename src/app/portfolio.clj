@@ -7,13 +7,13 @@
    [core.portfolio.rules :as rules]
    [core.command :as command]))
 
-(defrecord Portfolio [rx rules-state auth-context]
+(defrecord Portfolio [signals rx rules-state auth-context]
   component/Lifecycle
   (start [this]
     (if rx
       this
       (let [{:keys [http-client]} auth-context
-            rs (atom (rules/create-session (command/->DummyCommandExecutor)))
+            rs (atom (rules/create-session (command/->DummyCommandExecutor) signals)) ; TODO switch to the read async executor
             in-channel (portfolio-thread/start rs)]
         (-> this
             (assoc :rx in-channel)
@@ -23,5 +23,5 @@
       (a/close! rx))
     (assoc this :rx nil)))
 
-(defn new []
-  (map->Portfolio {}))
+(defn make [signals]
+  (map->Portfolio {:signals signals}))

@@ -4,7 +4,8 @@
             [app.auth-context :as auth-context]
             [app.web.server :as server-component]
             [app.portfolio :as portfolio-component]
-            [app.stream :as stream-component])
+            [app.stream :as stream-component]
+            [core.signal :as signal])
   (:gen-class))
 
 (defn create-system
@@ -12,22 +13,24 @@
   (component/system-map
 
    :config
-   (config/new)
+   (config/make)
 
    :auth-context
-   (component/using (auth-context/new)
+   (component/using (auth-context/make)
                     [:config])
 
    :stream
-   (component/using (stream-component/new)
+   (component/using (stream-component/make)
                     [:config :auth-context])
 
    :portfolio
-   (component/using (portfolio-component/new)
+   (component/using (portfolio-component/make [(signal/make-dummy-signal "DAX Killer")
+                                               (signal/make-dummy-signal "MACD")
+                                               (signal/make-dummy-signal "Crossover")])
                     [:auth-context])
 
    :web-server
-   (component/using (server-component/new port)
+   (component/using (server-component/make port)
                     [:auth-context :stream :portfolio])))
 
 (defn -main

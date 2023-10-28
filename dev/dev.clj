@@ -9,11 +9,12 @@
             [clojure.spec.alpha :as ds]
             [cheshire.core :as djson]
             [org.httpkit.client :as client]
-            [ig.rest :as rest]))
+            [ig.rest :as rest]
+            [core.portfolio.rules :as rules]))
 
 (set-init
-  (fn [_]
-    (main/create-system {:port 3000})))
+ (fn [_]
+   (main/create-system {:port 3000})))
 
 (comment
   (hv/html (devv/market-main))
@@ -22,6 +23,8 @@
   (stop)
   (ns-unalias 'dev 'igstream)
   (:market-generator system)
+  (let [{:keys [rules-state]} (get-in system [:portfolio])]
+    (rules/get-signals @rules-state))
   (let [connection (:connection (:stream system))]
     (igstream/get-subscriptions connection)
     ;; (igstream/get-status connection)
@@ -30,11 +33,6 @@
   @((get-in system [:stream :http-client]) (rest/set-active-account "Z53ZLX"))
   (Double/parseDouble "2.3332")
 ;; https://rymndhng.github.io/2020/04/15/production-considerations-for-clj-http/
-@(client/request {:url     "https://google.com"
-                 :keep-alive 30000
-
-                 } (fn [{:keys [status headers body error opts]}]
-                     body))
-  ,)
-
-
+  @(client/request {:url     "https://google.com"
+                    :keep-alive 30000} (fn [{:keys [status headers body error opts]}]
+                                         body)))
