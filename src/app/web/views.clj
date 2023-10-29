@@ -65,10 +65,10 @@
 (defn signal-list
   "TODO should not be able to subscribe the same strategy to the same market "
   [signals markets]
-  (for [{:keys [name id state]} signals]
+  (for [{:keys [::signal/id ::signal/name ::signal/active?]} signals]
     [:li name
      [:form
-      (if (= state ::signal/active)
+      (if active?
         [:label.text-green-600 {:for "markets"} "Subscribed markets"]
         [:label {:for "markets"} "Subscribed markets"])
       [:select#markets {:name "epic"}

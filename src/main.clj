@@ -24,9 +24,9 @@
                     [:config :auth-context])
 
    :portfolio
-   (component/using (portfolio-component/make [(signal/make-dummy-signal "DAX Killer")
-                                               (signal/make-dummy-signal "MACD")
-                                               (signal/make-dummy-signal "Crossover")])
+   (component/using (portfolio-component/make [(signal/make-dax-killer-signal)
+                                               (signal/make-dax-killer-signal)
+                                               (signal/make-dax-killer-signal)])
                     [:auth-context])
 
    :web-server

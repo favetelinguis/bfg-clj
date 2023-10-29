@@ -141,7 +141,7 @@
            {:keys [connection]} (get-in request [:dependencies :stream])
            markets (-> (stream/get-subscriptions connection)
                        (subscription/get-subscribed-epics))
-           strategies (rules/get-signals @rules-state)]
+           strategies (rules/get-all-signals @rules-state)]
        (-> (views/signal-list strategies markets)
            (ui-component)
            (ok))))

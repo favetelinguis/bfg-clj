@@ -25,12 +25,10 @@
 #_(st/instrument)
 
 (deftest signals-can-get-activated
-  (-> (rules/create-session (command/->DummyCommandExecutor) [(signal/make-dummy-signal "test signal" "test-id")])
+  (-> (rules/create-session (command/->DummyCommandExecutor) [(signal/make-dax-killer-signal)] :id-fn #(identity "test-id"))
       (rules/activate-signal-for-market "test-id" "dax")
       ((fn [session]
-         (is (= ::signal/active (-> (rules/get-signals session)
-                                    first
-                                    :state)))))))
+         (is (= 1 (count (filter ::signal/active? (rules/get-all-signals session)))))))))
 
 ; BELOW ARE OLD TEST THAT I MIGHT WANT INSPIRATION FROM AND THEN DELETE
 ;; (defn debug-rules []
