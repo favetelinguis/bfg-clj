@@ -103,3 +103,9 @@
   (-> session
       (o/insert epic ::signal-activated id)
       (o/fire-rules)))
+
+(defn deactivate-signal-for-market
+  [session id epic]
+  (-> session
+      (o/retract epic ::signal-activated)
+      (o/fire-rules)))

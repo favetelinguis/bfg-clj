@@ -74,8 +74,11 @@
       [:select#markets {:name "epic"}
        (for [market markets]
          [:option {:value market} market])]
-      [:button {:hx-put (str "/signal/" id)
-                :hx-target "#signal-list"} "Activate signa"]]]))
+      (if active?
+        [:button {:hx-delete (str "/signal/" id)
+                  :hx-target "#signal-list"} "De-Activate signa"]
+        [:button {:hx-put (str "/signal/" id)
+                  :hx-target "#signal-list"} "Activate signa"])]]))
 
 (defn not-found []
   [:div

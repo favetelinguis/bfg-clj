@@ -147,10 +147,19 @@
            (ok))))
 
    (PUT "/signal/:id" request
+        ; TODO this is to basic a signal can be subscribed to multiple markets we support only one market now
      (let [{:keys [id epic]} (:params request)
            {:keys [rules-state]} (get-in request [:dependencies :portfolio])]
        (when (and epic id)
          (swap! rules-state rules/activate-signal-for-market id epic)
+         (response/redirect "/signal/list" :see-other))))
+
+   (DELETE "/signal/:id" request
+        ; TODO this is to basic a signal can be subscribed to multiple markets we support only one market now
+     (let [{:keys [id epic]} (:params request)
+           {:keys [rules-state]} (get-in request [:dependencies :portfolio])]
+       (when (and epic id)
+         (swap! rules-state rules/deactivate-signal-for-market id epic)
          (response/redirect "/signal/list" :see-other))))
 
    (route/not-found

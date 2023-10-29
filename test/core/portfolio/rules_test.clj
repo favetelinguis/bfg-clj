@@ -28,7 +28,7 @@
   (-> (rules/create-session (command/->DummyCommandExecutor) [(signal/make-dax-killer-signal)] :id-fn #(identity "test-id"))
       (rules/activate-signal-for-market "test-id" "dax")
       ((fn [session]
-         (is (= 1 (count (filter ::signal/active? (rules/get-all-signals session)))))))))
+         (is (= 1 (filter ::signal/active? (rules/get-all-signals session))))))))
 
 ; BELOW ARE OLD TEST THAT I MIGHT WANT INSPIRATION FROM AND THEN DELETE
 ;; (defn debug-rules []
