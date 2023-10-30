@@ -3,11 +3,39 @@
             [core.command :as command]
             [core.events :as e]
             [ig.stream.item :as i]
+            [core.command :refer [CommandExecutor]]
             [core.signal :as signal])
   (:require
    [clojure.spec.test.alpha :as st]
    [clojure.test :refer :all]
-   [odoyle.rules :as o]))
+   [odoyle.rules :as o])
+  (:import [java.time Instant]))
+
+(deftype TestCommandExecutor [state]
+  CommandExecutor
+  (open-order! [this order] (swap! state conj order))
+  (close-order! [this order] (swap! state conj order)))
+
+(defn debug-rules []
+  (->> rules/rules
+       (map (fn [rule]
+              (o/wrap-rule rule
+                           {:what
+                            (fn [f session new-fact old-fact]
+                              (println :what (:name rule) new-fact old-fact)
+                              (f session new-fact old-fact))
+                            :when
+                            (fn [f session match]
+                              (println :when (:name rule) match)
+                              (f session match))
+                            :then
+                            (fn [f session match]
+                              (println :then (:name rule) match)
+                              (f session match))
+                            :then-finally
+                            (fn [f session]
+                              (println :then-finally (:name rule))
+                              (f session))})))))
 
 (deftest updating-facts
   (-> (reduce o/add-rule (o/->session)
@@ -30,123 +58,21 @@
       ((fn [session]
          (is (= 1 (filter ::signal/active? (rules/get-all-signals session))))))))
 
-; BELOW ARE OLD TEST THAT I MIGHT WANT INSPIRATION FROM AND THEN DELETE
-;; (defn debug-rules []
-;;   (rules/init-bfg-session
-;;     (->> rules/rule-set
-;;          (map (fn [rule]
-;;                 (o/wrap-rule rule
-;;                              {:what
-;;                               (fn [f session new-fact old-fact]
-;;                                 (println :what (:name rule) new-fact old-fact)
-;;                                 (f session new-fact old-fact))
-;;                               :when
-;;                               (fn [f session match]
-;;                                 (println :when (:name rule) match)
-;;                                 (f session match))
-;;                               :then
-;;                               (fn [f session match]
-;;                                 (println :then (:name rule) match)
-;;                                 (f session match))
-;;                               :then-finally
-;;                               (fn [f session]
-;;                                 (println :then-finally (:name rule))
-;;                                 (f session))}))))))
+(deftest sell-order-is-triggered-only-once
+  (let [result (atom [])
+        epic "dax"
+        signal-id "test-id"]
+    (-> (rules/create-session (->TestCommandExecutor result)
+                              [(signal/make-dax-killer-signal)]
+                              :id-fn #(identity signal-id))
+        (rules/activate-signal-for-market signal-id epic)
+        (rules/subscribe-market epic)
+        (rules/update-session (e/create-balance-event "account1" 100000))
+        (rules/update-session (e/create-candle-event epic (Instant/now) 100 10 60 70))
+        (rules/update-session (e/create-candle-event epic (Instant/now) 100 10 60 60))
+        (rules/update-session (e/create-candle-event epic (Instant/now) 100 10 60 50))
+        (rules/update-session (e/create-candle-event epic (Instant/now) 100 10 60 40))
+        (rules/update-session (e/create-candle-event epic (Instant/now) 100 10 60 30))
+        ((fn [session]
+           (is (= 1 (count @result))))))))
 
-;; (deftest adding-ohlc-bar-and-series-test
-;;   (-> (rules/init-bfg-session rules/rule-set)
-;;       (o/insert :DAX ::ohlc/bar data/bar-0)
-;;       o/fire-rules
-;;       ((fn [session]
-;;          (is (o/contains? session :DAX ::ohlc/bar))
-;;          (is (= 1 (count (o/query-all session ::rules/ohlc-bar))))
-;;          (is (= 1 (count (:ohlc-series (first (o/query-all session ::rules/ohlc-series))))))
-;;          session))
-;;       (o/insert :DAX ::ohlc/bar data/bar-1)
-;;       o/fire-rules
-;;       (o/insert :DAX ::ohlc/bar data/bar-2)
-;;       o/fire-rules
-;;       ((fn [session]
-;;          (is (= 1 (count (o/query-all session ::rules/ohlc-bar))))
-;;          (is (= 3 (count (:ohlc-series (first (o/query-all session ::rules/ohlc-series))))))
-;;          session))
-;;       ))
-
-;; (deftest atr-series-test
-;;   (with-redefs [atr/periods 3]
-;;     (-> (rules/init-bfg-session rules/rule-set)
-;;         (o/insert :DAX ::ohlc/bar data/bar-0)
-;;         o/fire-rules
-;;         ((fn [session]
-;;            (is (not (o/contains? session :DAX ::atr/series)))
-;;            session))
-;;         (o/insert :DAX ::ohlc/bar data/bar-1)
-;;         o/fire-rules
-;;         (o/insert :DAX ::ohlc/bar data/bar-2)
-;;         o/fire-rules
-;;         ((fn [session]
-;;            (is (o/contains? session :DAX ::atr/series))
-;;            (is (= 1 (count (:atr-series (first (o/query-all session ::rules/atr-series))))))
-;;            session))
-;;         (o/insert :DAX ::ohlc/bar data/bar-3)
-;;         o/fire-rules
-;;         ((fn [session]
-;;            (is (= 2 (count (:atr-series (first (o/query-all session ::rules/atr-series))))))
-;;            session))
-;;         )))
-
-;; (deftest ha-series-test
-;;   (with-redefs [atr/periods 3]
-;;     (-> (rules/init-bfg-session rules/rule-set)
-;;         (o/insert :DAX ::ohlc/bar data/bar-0)
-;;         o/fire-rules
-;;         ((fn [session]
-;;            (is (o/contains? session :DAX ::ha/series))
-;;            (is (empty? (:ha-series (first (o/query-all session ::rules/ha-series)))))
-;;            session))
-;;         (o/insert :DAX ::ohlc/bar data/bar-1)
-;;         o/fire-rules
-;;         (o/insert :DAX ::ohlc/bar data/bar-2)
-;;         o/fire-rules
-;;         ((fn [session]
-;;            (is (= 1 (count (:ha-series (first (o/query-all session ::rules/ha-series))))))
-;;            session))
-;;         (o/insert :DAX ::ohlc/bar data/bar-3)
-;;         o/fire-rules
-;;         ((fn [session]
-;;            (is (= 2 (count (:ha-series (first (o/query-all session ::rules/ha-series))))))
-;;            session))
-;;         )))
-
-;; (def setup-trigger-bar
-;;   (ohlc/make-bar :DAX (Instant/parse "2022-01-25T09:18:00Z") 15855. 15215. 15222. 15777.))
-
-;; (deftest setup-test
-;;   (with-redefs [atr/periods 2
-;;                 signal/atr-multiple-setup-target 1
-;;                 signal/consecutive-heikin-ashi-bars-trigger 2]
-;;     (-> (rules/init-bfg-session rules/rule-set)
-;;         ((fn [session]
-;;            (is (o/contains? session :DAX ::signal/signal))
-;;            (is (= :await-setup (:signal (first (o/query-all session ::rules/signal)))))
-;;            session))
-;;         (o/insert :DAX ::ohlc/bar data/bar-0)
-;;         o/fire-rules
-;;         (o/insert :DAX ::ohlc/bar data/bar-1)
-;;         o/fire-rules
-;;         (o/insert :DAX ::ohlc/bar data/bar-2)
-;;         o/fire-rules
-;;         ((fn [session]
-;;            (is (= :await-setup (:signal (first (o/query-all session ::rules/signal)))))
-;;            session))
-;;         (o/insert :DAX ::ohlc/bar setup-trigger-bar)
-;;         o/fire-rules
-;;         ((fn [session]
-;;            (is (= :await-entry (:signal (first (o/query-all session ::rules/signal)))))
-;;            session))
-;;         )))
-
-;; ;; test await-entry
-;; ;; new bar same directn
-;; ;; new bar entry bar but not doji
-;; ;; new bar entry so enter

@@ -5,8 +5,8 @@
 
 (deftype IgCommandExecutor [client]
   CommandExecutor
-  (open-working-order! [this order]
+  (open-order! [this order]
     (client (rest/open-order order)))
 
-  (close-working-order! [this order]
+  (close-order! [this order]
     (client (rest/close-order order))))

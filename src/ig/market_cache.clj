@@ -1,5 +1,6 @@
 (ns ig.market-cache
-  (:require [core.events :as e]))
+  (:require [core.events :as e])
+  (:import [java.time Instant]))
 
 (defn make
   ([]
@@ -33,11 +34,13 @@
 
                              (when complete-candle?
                                (e/create-candle-event epic
-                                                      (calculate-mid-price "OFR_OPEN" "BID_OPEN")
+                                                      (-> (get-in new-market-cache [epic "UTM"])
+                                                          (Long/parseLong)
+                                                          (Instant/ofEpochMilli))
                                                       (calculate-mid-price "OFR_HIGH" "BID_HIGH")
                                                       (calculate-mid-price "OFR_LOW" "BID_LOW")
-                                                      (calculate-mid-price "OFR_CLOSE" "BID_CLOSE")
-                                                      (get-in new-market-cache [epic "UTM"])))])]
+                                                      (calculate-mid-price "OFR_OPEN" "BID_OPEN")
+                                                      (calculate-mid-price "OFR_CLOSE" "BID_CLOSE")))])]
     (make events new-market-cache)))
 
 (defn remove-epic

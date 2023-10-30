@@ -1,5 +1,6 @@
 (ns core.portfolio.rules
   (:require
+   [core.indicators.ohlc-series :as ohlc]
    [core.signal :as signal]
    [odoyle.rules :as o]
    [core.events :as e]
@@ -7,26 +8,12 @@
 
 (def rules
   (o/ruleset
-   {::mid-price-update
+   {::candle-update
     [:what
-     [::executors ::command c]
-     [epic ::e/mid-price price]
-     :then
-     (command/open-working-order! c price)]
-
-    ::candle-update
-    [:what
-     [::executors ::command c]
      [epic ::e/candle candle]
+     [epic ::barseries bars {:then false}]
      :then
-     (command/close-working-order! c candle)]
-
-    ::balance-update
-    [:what
-     [::executors ::command c {:then false}]
-     [epic ::e/balance balance]
-     :then
-     (command/close-working-order! c balance)]
+     (o/insert! epic ::barseries (ohlc/add-bar bars candle))]
 
     ::run-signal-on-midprice
     [:what
@@ -34,23 +21,29 @@
      [epic ::signal-activated id {:then false}]
      [id ::signal data {:then false}]
      :then
-     (o/insert! id ::signal (signal/on-midprice data price))]
+     (let [new-signal (signal/on-midprice data price)]
+       (o/insert! id ::signal new-signal)
+       (when-let [command (signal/get-commands new-signal epic)]
+         (o/insert! (::e/uuid command) command)))]
 
-    ::run-signal-on-candle
+    ::run-signal-on-barseries-new-bar
     [:what
-     [epic ::e/candle candle]
+     [epic ::barseries bars]
      [epic ::signal-activated id {:then false}]
-     [id ::signal data {:then false}] ; to avoid infinite loops
+     [id ::signal data {:then false}]
      :then
-     (o/insert! id ::signal (signal/on-candle data candle))]
+     (let [new-signal (signal/on-candle data bars)]
+       (o/insert! id ::signal new-signal)
+       (when-let [command (signal/get-commands new-signal epic)]
+         (o/insert! (::e/uuid command) (::e/kind command) command)))]
 
-    ::check-commands-to-execute
+    ::execute-new-order
     [:what
+     [_ ::e/order-new new-order]
      [::executors ::command c {:then false}]
-     [id ::signal data]
+     [epic ::e/balance balance {:then false}]
      :then
-     (when-let [command (signal/get-commands data)]
-       (command/open-working-order! c command))]
+     (command/open-order! c new-order)]
 
     ::get-active-signals
     [:what
@@ -64,8 +57,9 @@
 (defn create-session
   "command-executor is an impl of protocol CommandExecutor
   signals is a list of impl of core.signal/Signal which we add an id to in the method"
-  [command-executor signals & {:keys [id-fn] :or {id-fn #(str (java.util.UUID/randomUUID))}}]
-  (-> (reduce o/add-rule (o/->session) rules)
+  [command-executor signals & {:keys [id-fn alt-rules] :or {id-fn #(str (java.util.UUID/randomUUID))
+                                                            alt-rules rules}}]
+  (-> (reduce o/add-rule (o/->session) alt-rules)
       (#(reduce
          (fn [session signal] (o/insert session (id-fn) ::signal signal))
          %
@@ -86,11 +80,11 @@
          (o/query-all session ::get-all-signals))))
 
 (defn update-session
-  [session {:keys [::e/kind ::e/epic ::e/account] :as event}]
+  [session {:keys [::e/kind ::e/name ::e/account-id] :as event}]
   (let [to-insert (case kind
-                    ::e/mid-price [epic kind event]
-                    ::e/candle [epic kind event]
-                    ::e/balance [account kind event]
+                    ::e/mid-price [name kind event]
+                    ::e/candle [name kind event]
+                    ::e/balance [account-id kind event]
                     ; TODO add all event kinds
                     [::event ::unknown event])]
     (-> session
@@ -98,7 +92,6 @@
         o/fire-rules)))
 
 (defn activate-signal-for-market
-  "Insert signal for epic will not fire rules since signal only fires on-candle and on-midprice"
   [session id epic]
   (-> session
       (o/insert epic ::signal-activated id)
@@ -108,4 +101,16 @@
   [session id epic]
   (-> session
       (o/retract epic ::signal-activated)
+      (o/fire-rules)))
+
+(defn subscribe-market
+  [session epic]
+  (-> session
+      (o/insert epic ::barseries (ohlc/make-empty-series))
+      (o/fire-rules)))
+
+(defn unsubscribe-market
+  [session epic]
+  (-> session
+      (o/retract epic ::barseries)
       (o/fire-rules)))

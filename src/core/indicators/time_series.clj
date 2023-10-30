@@ -1,5 +1,6 @@
 (ns core.indicators.time-series
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [core.events :as e]))
 
 (s/def ::time inst?)
 
@@ -39,11 +40,11 @@
   "
   [ts & bars]
   (let [adder (fn [ts bar] (if-let [prior-bar (get-first ts)]
-                             (let [is-same-market (= (:id bar) (:id prior-bar))
-                                   is-new-bar-oldest (> (.compareTo (:time bar) (:time prior-bar)) 0)]
+                             (let [is-same-market (= (::e/name bar) (::e/name prior-bar))
+                                   is-new-bar-oldest (> (.compareTo (::e/time bar) (::e/time prior-bar)) 0)]
                                (when (and is-same-market is-new-bar-oldest)
-                                 (assoc ts (:time bar) bar)))
-                             (assoc ts (:time bar) bar)))]
+                                 (assoc ts (::e/time bar) bar)))
+                             (assoc ts (::e/time bar) bar)))]
     (reduce adder ts bars)))
 
 (defn make-indicator-series

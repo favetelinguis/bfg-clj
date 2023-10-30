@@ -1,9 +1,11 @@
 (ns ig.stream.subscription
   (:require
    [ig.stream.item :as i]
+   [ig.order-manager :as order-manager]
    [ig.market-cache :as market-cache]
    [clojure.string :as str]
-   [core.events :as e])
+   [core.events :as e]
+   [cheshire.core :as json])
   (:import (com.lightstreamer.client Subscription SubscriptionListener)))
 
 (defn- new-subscription-listener [callback]
@@ -28,7 +30,7 @@
   (let [item (i/market-item epic)
         mode "MERGE"
         ; TODO remove bid offer and use candle stream as only source to reduce load
-        fields ["UPDATE_TIME" "MARKET_DELAY" "MARKET_STATE"]
+        fields ["MARKET_DELAY" "MARKET_STATE"]
         callback (fn [item-update]
                    (when-let [events (first
                                       (swap! market-cache-state market-cache/update-status (i/into-map item-update)))]
@@ -60,9 +62,17 @@
   [account-id f]
   (let [item (i/trade-item account-id)
         mode "DISTINCT"
-        fields ["CONFIRMS" "OPU" "WOU"] ; is WOU ever used?
+        fields ["CONFIRMS" "OPU" "WOU"]
         callback (fn [item-update] (let [m (i/into-map item-update)]
-                                     (println m)))] ; TODO use f instead of println
+                                     (when-let [data (get m "CONFIRMS")]
+                                       (f (-> (json/decode data true)
+                                              (assoc ::order-manager/kind :confirms))))
+                                     (when-let [data (get m "OPU")]
+                                       (f (-> (json/decode data true)
+                                              (assoc ::order-manager/kind :opu))))
+                                     (when-let [data (get m "WOU")]
+                                       (f (-> (json/decode data true)
+                                              (assoc ::order-manager/kind :wou))))))]
     (new-subscription item mode fields callback)))
 
 (defn get-item

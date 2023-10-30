@@ -3,33 +3,6 @@
    [cheshire.core :as json]))
 
 (defn create-session-v2
-  ;; {:clientId "103607452",
-  ;; :trailingStopsEnabled false,
-  ;; :currentAccountId "Z53ZLW",
-  ;; :currencySymbol "SEK",
-  ;; :dealingEnabled true,
-  ;; :hasActiveLiveAccounts true,
-  ;; :accountInfo
-  ;; {:balance 99947.75, :deposit 0.0, :profitLoss 0.0, :available 99947.75},
-  ;; :hasActiveDemoAccounts true,
-  ;; :lightstreamerEndpoint "https://demo-apd.marketdatasystems.com",
-  ;; :reroutingEnvironment nil,
-  ;; :timezoneOffset 2,
-  ;; :accountType "CFD",
-  ;; :currencyIsoCode "SEK",
-  ;; :accounts
-  ;; [{:accountId "Z53ZLW",
-  ;;   :accountName "CFD",
-  ;;   :preferred true,
-  ;;   :accountType "CFD"}
-  ;;  {:accountId "Z53ZLX",
-  ;;   :accountName "Barriers och optioner",
-  ;;   :preferred false,
-  ;;   :accountType "CFD"}
-  ;;  {:accountId "Z53ZLY",
-  ;;   :accountName "Börshandlade produkter",
-  ;;   :preferred false,
-  ;;   :accountType "PHYSICAL"}]}
   [{:keys [baseUrl identifier password apikey]}]
   {:headers {"version"      "2"
              "Accept" "application/json; charset=UTF-8"
@@ -38,16 +11,6 @@
    :url     (str baseUrl "/session")
    :method :post
    :body    (json/encode {:identifier identifier :password password})})
-
-(defn open-order [m]
-  {:headers {"version"      "1"}
-   :method :get
-   :url     "/accounts/preferences"})
-
-(defn close-order [m]
-  {:headers {"version"      "1"}
-   :method :get
-   :url     "/accounts/preferences"})
 
 (defn get-accounts []
   {:headers {"version"      "1"}
@@ -63,3 +26,27 @@
   {:headers {"version"      "1"}
    :method :delete
    :url     "/session"})
+
+(defn open-order [epic direction size currencyCode]
+  {:headers {"version"      "2"}
+   :method :post
+   :url     "/positions/otc"
+   :body (json/encode {"epic" epic
+                       "direction" direction
+                       "size" size
+                       "expiry" "-" ; could vary between markets?
+                       ;; "dealReference" "TODO" ; optional user generated id
+                       "currencyCode" currencyCode
+                       "forceOpen" false
+                       "guaranteedStop" false
+                       "orderType" "MARKET"})})
+
+(defn close-order [deal-id direction size]
+  {:headers {"version"      "1"
+             "_method" "DELETE"}
+   :method :get
+   :url          "/positions/otc"
+   :body (json/encode {"dealId" deal-id
+                       "direction" direction
+                       "size" size
+                       "orderType" "MARKET"})})

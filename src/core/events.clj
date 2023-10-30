@@ -16,13 +16,13 @@
                 ::position-exit})
 
 (defn create-candle-event
-  [epic o h l c t]
+  [epic t h l o c]
   {::name epic
-   ::open o
+   ::time t
    ::high h
    ::low l
+   ::open o
    ::close c
-   ::time t
    ::kind ::candle})
 
 (defn create-mid-price-event
@@ -46,3 +46,10 @@
   [s]
   {::type ::fatal
    ::message s})
+
+(defn create-new-order
+  [epic direction]
+  {::name epic
+   ::uuid (str (java.util.UUID/randomUUID))
+   ::direction direction
+   ::kind ::order-new})

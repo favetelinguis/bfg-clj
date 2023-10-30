@@ -1,27 +1,24 @@
 (ns app.portfolio
   (:require
-   [ig.command-executor :refer [->IgCommandExecutor]]
    [clojure.core.async :as a]
    [com.stuartsierra.component :as component]
    [core.portfolio :as portfolio-thread]
-   [core.portfolio.rules :as rules]
-   [core.command :as command]))
+   [core.portfolio.rules :as rules]))
 
-(defrecord Portfolio [signals rx rules-state auth-context]
+(defrecord Portfolio [init rx rules-state]
   component/Lifecycle
   (start [this]
-    (if rx
+    (if init
       this
-      (let [{:keys [http-client]} auth-context
-            rs (atom (rules/create-session (command/->DummyCommandExecutor) signals)) ; TODO switch to the read async executor
-            in-channel (portfolio-thread/start rs)]
-        (-> this
-            (assoc :rx in-channel)
-            (assoc :rules-state rs)))))
+      (do
+        (portfolio-thread/start rx rules-state)
+        (assoc this :init true))))
   (stop [this]
-    (when rx
+    (when init
       (a/close! rx))
-    (assoc this :rx nil)))
+    (assoc this :init false)))
 
-(defn make [signals]
-  (map->Portfolio {:signals signals}))
+(defn make [rx order-manager-chan signals]
+  (map->Portfolio {:init false
+                   :rx rx
+                   :rules-state (atom (rules/create-session #(a/>!! order-manager-chan %) signals))}))

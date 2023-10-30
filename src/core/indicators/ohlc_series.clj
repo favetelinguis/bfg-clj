@@ -1,23 +1,19 @@
 (ns core.indicators.ohlc-series
-  (:require [clojure.spec.alpha :as s]
-            [core.indicators.time-series :as ts]))
-
-(s/def ::id keyword?)
-(s/def ::price (s/double-in :min 0. :max 100000.0))
-(s/def ::o ::price)
-(s/def ::h ::price)
-(s/def ::l ::price)
-(s/def ::c ::price)
-(s/def ::bar (s/keys :req-un [::id ::time ::o ::h ::l ::c]))
-(s/def ::series (ts/time-series? ::bar))
-
-(defn make-bar [market-id time high low open close]
-  {:id market-id :time time :o open :h high :l low :c close})
-
-(defn market-id [bar]
-  (::id bar))
+  (:require [core.indicators.time-series :as ts]
+            [core.events :as e]))
 
 (def make-empty-series ts/make-empty)
 
-(def add-ohlc-bar (ts/add-indicator-bar (fn [_ bar] bar)))
+(def add-bar (ts/add-indicator-bar (fn [_ bar] bar)))
 
+(defn down? [series]
+  (let [a (ts/get-first series)
+        b (ts/get-second series)]
+    (when (and a b)
+      (< (::e/close a) (::e/close b)))))
+
+(defn up? [series]
+  (let [a (ts/get-first series)
+        b (ts/get-second series)]
+    (when (and a b)
+      (> (::e/close a) (::e/close b)))))

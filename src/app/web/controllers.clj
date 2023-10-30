@@ -63,7 +63,7 @@
    (POST "/market/subscription" request
      (let [{:keys [epic]} (:params request)
            {:keys [connection market-cache-state]} (get-in request [:dependencies :stream])
-           {:keys [rx]} (get-in request [:dependencies :portfolio])
+           {:keys [rx rules-state]} (get-in request [:dependencies :portfolio])
            subscriptions (stream/get-subscriptions connection)
            candle-sub (subscription/new-candle-subscription (i/chart-candle-1min-item epic)
                                                             (fn [& more]
@@ -73,17 +73,20 @@
                                                                    (doseq [m more]
                                                                      (a/>!! rx m))) market-cache-state)]
        (when (empty? (subscription/get-subscriptions-matching subscriptions (i/market-item epic)))
+         (swap! rules-state rules/subscribe-market epic)
          (stream/subscribe! connection market-sub candle-sub))
        (response/redirect "/market/subscription/list" :see-other)))
 
    (DELETE "/market/:epic/subscription" request
      (let [{:keys [epic]} (:params request)
            {:keys [connection market-cache-state]} (get-in request [:dependencies :stream])
+           {:keys [rules-state]} (get-in request [:dependencies :portfolio])
            subs (stream/get-subscriptions connection)
            market-sub (first (subscription/get-subscriptions-matching subs (i/market-item epic)))
            candle-sub (first (subscription/get-subscriptions-matching subs (i/chart-candle-1min-item epic)))]
        (when market-sub
          (stream/unsubscribe! connection market-sub candle-sub)
+         (swap! rules-state rules/unsubscribe-market epic)
          (swap! market-cache-state market-cache/remove-epic epic))
        (response/redirect "/market/subscription/list" :see-other)))
 
@@ -105,9 +108,10 @@
      (let [{:keys [account-id]} (:params request)
            {:keys [connection]} (get-in request [:dependencies :stream])
            {:keys [rx]} (get-in request [:dependencies :portfolio])
+           order-manager (get-in request [:dependencies :order-manager])
            subscriptions (stream/get-subscriptions connection)
            account-sub (subscription/new-account-subscription account-id #(a/>!! rx %))
-           trade-sub (subscription/new-trade-subscription account-id #(a/>!! rx %))]
+           trade-sub (subscription/new-trade-subscription account-id #(a/>!! (:rx order-manager) %))]
        (when (empty? (subscription/get-subscriptions-matching subscriptions (i/account-item account-id)))
          (stream/subscribe! connection account-sub trade-sub))
        (response/redirect "/account/list" :see-other)))

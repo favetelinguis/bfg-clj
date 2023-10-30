@@ -1,32 +1,31 @@
-(ns core.signal)
+(ns core.signal
+  (:require [core.indicators.ohlc-series :as ohlc]
+            [core.events :as e]))
 
 (defprotocol Signal
   (get-name [this] "Get the name")
-  (get-commands [this] "Return events from core.events to execute from last update")
+  (get-commands [this epic] "Return events from core.events to execute from last update")
   (on-midprice [this midprice] "Gets called on midprice")
-  (on-candle [this candle] "Get called on candle"))
+  (on-candle [this candles] "Get called on candle"))
 
-(defrecord DaxKillerSignal [state]
+(defrecord DaxKillerSignal [num]
   Signal
   (get-name [this] "DAX Killer")
-  (get-commands [this] this)
+
+  (get-commands [this epic] (cond
+                              (>= num 2) (e/create-new-order epic :buy)
+                              (<= num -2) (e/create-new-order epic :sell)))
+
   (on-midprice [this midprice] this)
-  (on-candle [this candle] this))
 
-#_(deftype DummySignal [state]
-    Signal
-    (on-midprice [this midprice] (swap! state inc))
-    (on-candle [this candle] (swap! state dec)))
+  (on-candle [this candles] (cond
+                              (ohlc/down? candles) (if (pos? num)
+                                                     (assoc this :num -1)
+                                                     (update this :num dec))
+                              (ohlc/up? candles) (if (pos? num)
+                                                   (update this :num inc)
+                                                   (assoc this :num 1))
+                              :else (assoc this :num 0))))
 
-#_(defn make-dummy-signal
-    ([name]
-     (make-dummy-signal name (str (java.util.UUID/randomUUID))))
-    ([name id]
-     {::name name
-      ::id id
-      ::state ::inactive
-      ::runner (->DummySignal (atom {}))}))
-
-(defn make-dax-killer-signal
-  []
-  (map->DaxKillerSignal {:state {}}))
+(defn make-dax-killer-signal []
+  (map->DaxKillerSignal {:num 0}))

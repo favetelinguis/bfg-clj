@@ -21,6 +21,7 @@
   (reset)
   (start)
   (stop)
+  (get-in system [:auth-context :http-client])
   (ns-unalias 'dev 'igstream)
   (:market-generator system)
   (let [{:keys [rules-state]} (get-in system [:portfolio])]
@@ -30,7 +31,8 @@
     ;; (igstream/get-status connection)
     )
   @(get-in system [:stream :market-cache-state])
-  @((get-in system [:stream :http-client]) (rest/set-active-account "Z53ZLX"))
+  @((get-in system [:auth-context :http-client]) (rest/open-order  "IX.D.DAX.IFMM.IP" "BUY" 1 "EUR"))
+  @((get-in system [:auth-context :http-client]) (rest/close-order "DIAAAANL43VHHA8"))
   (Double/parseDouble "2.3332")
 ;; https://rymndhng.github.io/2020/04/15/production-considerations-for-clj-http/
   @(client/request {:url     "https://google.com"

@@ -5,13 +5,13 @@
   Each function will execute in the portfolio, it is very important not to block since that will
   prevent portfolio from processing data. Each function in CommandExecutor should execute
   in an async way to not block portfolio."
-  (open-working-order! [this order] "Used to open new working order")
-  (close-working-order! [this order] "Used to close a working order"))
+  (open-order! [this order] "Used to open new working order")
+  (close-order! [this order] "Used to close a working order"))
 
 (deftype DummyCommandExecutor []
   CommandExecutor
-  (open-working-order! [this order]
+  (open-order! [this order]
     (println "Open new working order"))
 
-  (close-working-order! [this order]
+  (close-order! [this order]
     (println "Close working order")))
