@@ -35,15 +35,20 @@
      (let [new-signal (signal/on-candle data bars)]
        (o/insert! id ::signal new-signal)
        (when-let [command (signal/get-commands new-signal epic)]
-         (o/insert! (::e/uuid command) (::e/kind command) command)))]
+         (o/insert! (::e/name command) (::e/kind command) command)))]
 
     ::execute-new-order
     [:what
-     [_ ::e/order-new new-order]
+     [epic ::e/order-new new-order]
      [::executors ::command c {:then false}]
      [epic ::e/balance balance {:then false}]
      :then
-     (command/open-order! c new-order)]
+     (command/open-order! c new-order)
+     (o/retract! epic ::e/order-new)]
+
+    ::get-positions
+    [:what
+     [epic ::e/position-exit position]]
 
     ::get-active-signals
     [:what
@@ -67,6 +72,10 @@
       (o/insert ::executors ::command command-executor)
       o/fire-rules))
 
+(defn get-positions
+  [session]
+  (o/query-all session ::get-positions))
+
 (defn get-all-signals
   [session]
   (let [active-signal-ids (->> (o/query-all session ::get-active-signals)
@@ -85,6 +94,7 @@
                     ::e/mid-price [name kind event]
                     ::e/candle [name kind event]
                     ::e/balance [account-id kind event]
+                    ::e/position-new [name kind event]
                     ; TODO add all event kinds
                     [::event ::unknown event])]
     (-> session

@@ -32,7 +32,7 @@
     )
   @(get-in system [:stream :market-cache-state])
   @((get-in system [:auth-context :http-client]) (rest/open-order  "IX.D.DAX.IFMM.IP" "BUY" 1 "EUR"))
-  @((get-in system [:auth-context :http-client]) (rest/close-order "DIAAAANL43VHHA8"))
+  @((get-in system [:auth-context :http-client]) (rest/close-order "DIAAAANL43VHHA8" "SELL" 1))
   (Double/parseDouble "2.3332")
 ;; https://rymndhng.github.io/2020/04/15/production-considerations-for-clj-http/
   @(client/request {:url     "https://google.com"

@@ -48,8 +48,16 @@
    ::message s})
 
 (defn create-new-order
-  [epic direction]
+  [epic direction size]
   {::name epic
+   ::size size
    ::uuid (str (java.util.UUID/randomUUID))
    ::direction direction
    ::kind ::order-new})
+
+(defn position-new
+  [epic direction size]
+  {::name epic
+   ::size size
+   ::direction direction
+   ::kind ::position-new})

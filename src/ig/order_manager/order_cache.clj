@@ -1,4 +1,5 @@
-(ns ig.order-manager.order-cache)
+(ns ig.order-manager.order-cache
+  (:require [core.events :as e]))
 
 ; Open new market order
 ;; {:stopLevel nil, :dealStatus ACCEPTED, :date 2023-10-30T16:39:08.138, :expiry -, :affectedDeals [{:dealId DIAAAANL43VHHA8, :status OPENED}], :profit nil, :channel PublicRestOTC, :limitDistance nil, :size 1, :level 14714.2, :dealReference BXURXNUWV6CTYPT, :reason SUCCESS, :status OPEN, :epic IX.D.DAX.IFMM.IP, :trailingStop false, :profitCurrency nil, :limitLevel nil, :ig.order-manager/kind :confirms, :stopDistance nil, :guaranteedStop false, :dealId DIAAAANL43VHHA8, :direction BUY}
@@ -19,7 +20,16 @@
 ;; Close
 ;; {:dealIdOrigin DIAAAANL45UBMAL, :stopLevel nil, :dealStatus ACCEPTED, :expiry -, :channel PublicRestOTC, :size 0, :level 14710.7, :dealReference PPUVZFA4JACTYPT, :status DELETED, :epic IX.D.DAX.IFMM.IP, :limitLevel nil, :ig.order-manager/kind :opu, :guaranteedStop false, :timestamp 2023-10-30T17:02:01.144, :dealId DIAAAANL45UBMAL, :direction SELL}
 ;; {:stopLevel nil, :dealStatus ACCEPTED, :date 2023-10-30T17:02:01.152, :expiry -, :affectedDeals [{:dealId DIAAAANL45UBMAL, :status FULLY_CLOSED}], :profit -33.29, :channel PublicRestOTC, :limitDistance nil, :size 1, :level 14710.7, :dealReference UAU9JJHPNWYTYPT, :reason SUCCESS, :status CLOSED, :epic IX.D.DAX.IFMM.IP, :trailingStop false, :profitCurrency SEK, :limitLevel nil, :ig.order-manager/kind :confirms, :stopDistance nil, :guaranteedStop false, :dealId DIAAAANL45UBMAL, :direction BUY}
+(defn make [] {})
 
-(defn update
-  [old event]
-  old)
+(defn has-order?
+  [cache epic]
+  (not (nil? (get cache epic))))
+
+(defn add-order
+  [cache {:keys [::e/name] :as event}]
+  (assoc cache name event))
+
+(defn remove-order
+  [cache epic]
+  (dissoc cache epic))

@@ -13,8 +13,11 @@
     (merge (json/decode body true) {:cst cst :token x-security-token})))
 
 (defn create-http-client [{:keys [baseUrl apikey]} {:keys [cst token]}]
-  ; TODO Make so one can send in custom callback but have one as default value how to :or work for default value?
-  (fn [{:keys [headers url method body]}]
+  "Returns a function that takes a request map and the following option parameters
+  :error-callback function with signatur [status raw-body]
+  :success-callback function with signatur [body-as-keyword-map]"
+  (fn [{:keys [headers url method body]} & {:keys [error-callback success-callback] :or {error-callback (fn [status body] (println "Failure with status " status " and body " body))
+                                                                                         success-callback identity}}]
     (client/request {:url (str baseUrl url)
                      :keep-alive 30000
                      :method method
@@ -25,9 +28,8 @@
                                       "CST" cst
                                       "X-SECURITY-TOKEN" token} headers)} (fn [{:keys [status headers body error opts]}]
                                                                             (if (< status 299)
-                                                                              (json/decode body true)
-                                                                              (do
-                                                                                (println "Failure with status " status " error " error " and body " body)))))))
+                                                                              (success-callback (json/decode body true))
+                                                                              (error-callback status body))))))
 
 (defrecord AuthContext [http-client session config]
   component/Lifecycle

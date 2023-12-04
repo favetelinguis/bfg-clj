@@ -1,7 +1,6 @@
 (ns ig.stream.subscription
   (:require
    [ig.stream.item :as i]
-   [ig.order-manager :as order-manager]
    [ig.market-cache :as market-cache]
    [clojure.string :as str]
    [core.events :as e]
@@ -66,13 +65,13 @@
         callback (fn [item-update] (let [m (i/into-map item-update)]
                                      (when-let [data (get m "CONFIRMS")]
                                        (f (-> (json/decode data true)
-                                              (assoc ::order-manager/kind :confirms))))
+                                              (assoc ::e/kind :confirm))))
                                      (when-let [data (get m "OPU")]
                                        (f (-> (json/decode data true)
-                                              (assoc ::order-manager/kind :opu))))
+                                              (assoc ::e/kind :opu))))
                                      (when-let [data (get m "WOU")]
                                        (f (-> (json/decode data true)
-                                              (assoc ::order-manager/kind :wou))))))]
+                                              (assoc ::e/kind :wou))))))]
     (new-subscription item mode fields callback)))
 
 (defn get-item

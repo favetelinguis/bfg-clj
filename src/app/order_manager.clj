@@ -2,7 +2,7 @@
   (:require
    [clojure.core.async :as a]
    [ig.order-manager :as order-manager-thread]
-   [ig.command-executor :refer [->IgCommandExecutor]]
+   [ig.order-manager.order-cache :as order-cache]
    [com.stuartsierra.component :as component]))
 
 (defrecord OrderManager [init rx order-state auth-context portfolio-fn]
@@ -11,7 +11,7 @@
     (if init
       this
       (let [{:keys [http-client]} auth-context]
-        (order-manager-thread/start rx portfolio-fn order-state (->IgCommandExecutor http-client))
+        (order-manager-thread/start rx portfolio-fn order-state http-client)
         (assoc this :init true))))
   (stop [this]
     (when init
@@ -22,4 +22,4 @@
   (map->OrderManager {:init false
                       :rx rx
                       :portfolio-fn #(a/>!! portfolio-in-chan %)
-                      :order-state (atom {})})) ; TODO proper order cache state
+                      :order-state (atom (order-cache/make))}))
