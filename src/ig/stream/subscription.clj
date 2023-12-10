@@ -11,8 +11,8 @@
   (reify
     SubscriptionListener
     (onSubscription [this] (println "onSubscription"))
-    ;; (onListenStart [this subscription] (println subscription))
-    ;; (onListenEnd [this subscription] (println subscription))
+    (onListenStart [this subscription] (println "onListenStart"))
+    (onListenEnd [this subscription] (println "onListenEnd")) ;; can i use to delete in cache when market is shut down
     (onItemUpdate [this item-update] (callback item-update))
     (onSubscriptionError [this code message] (println (str code ": " message)))))
 
@@ -23,27 +23,19 @@
       (.addListener (new-subscription-listener callback)))))
 
 (defn new-market-subscription
-  "state is an atom used to build up market state, f is connection to portfolio and should
-  takes a vararg of events"
-  [epic f market-cache-state]
+  "f is the callback that takes item-update"
+  [epic f]
   (let [item (i/market-item epic)
         mode "MERGE"
-        ; TODO remove bid offer and use candle stream as only source to reduce load
-        fields ["MARKET_DELAY" "MARKET_STATE"]
-        callback (fn [item-update]
-                   (when-let [events (first
-                                      (swap! market-cache-state market-cache/update-status (i/into-map item-update)))]
-                     (apply f events)))]
+        callback (fn [item-update] (f (i/into-map item-update)))
+        fields ["MARKET_DELAY" "MARKET_STATE"]]
     (new-subscription item mode fields callback)))
 
 (defn new-candle-subscription
-  [item f market-cache-state]
+  [item f]
   (let [mode "MERGE"
-        fields ["OFR_OPEN", "OFR_HIGH", "OFR_LOW", "OFR_CLOSE", "BID_OPEN", "BID_HIGH", "BID_LOW", "BID_CLOSE", "CONS_END", "UTM"]
-        callback (fn [item-update]
-                   (when-let [events (first
-                                      (swap! market-cache-state market-cache/update-candle (i/into-map item-update)))]
-                     (apply f events)))]
+        callback (fn [item-update] (f (i/into-map item-update)))
+        fields ["OFR_OPEN", "OFR_HIGH", "OFR_LOW", "OFR_CLOSE", "BID_OPEN", "BID_HIGH", "BID_LOW", "BID_CLOSE", "CONS_END", "UTM"]]
     (new-subscription item mode fields callback)))
 
 (defn new-account-subscription
@@ -51,10 +43,7 @@
   (let [item (i/account-item account-id)
         mode "MERGE"
         fields ["AVAILABLE_CASH"]
-        callback (fn [item-update] (let [m (i/into-map item-update)
-                                         balance (get m "AVAILABLE_CASH")
-                                         event (e/create-balance-event account-id (Double/parseDouble balance))]
-                                     (f event)))]
+        callback (fn [item-update] (f (i/into-map item-update)))]
     (new-subscription item mode fields callback)))
 
 (defn new-trade-subscription

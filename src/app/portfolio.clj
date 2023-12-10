@@ -1,24 +1,32 @@
 (ns app.portfolio
   (:require
+   [app.transducer-utils :as utils]
    [clojure.core.async :as a]
-   [com.stuartsierra.component :as component]
-   [core.portfolio :as portfolio-thread]
-   [core.portfolio.rules :as rules]))
+   [com.stuartsierra.component :as component]))
 
-(defrecord Portfolio [init rx rules-state]
+(defn portfolio-state-transducer [state]
+  ;; TODO import pure f for managing portfolio
+  (let [f (fn [old event]
+            (println "port-x")
+            [[{:new 3} {:new 3}] (merge old event)])]
+    (utils/make-state-transducer f state)))
+
+(defrecord Portfolio [channel mix]
   component/Lifecycle
   (start [this]
-    (if init
+    (println "Starting Port")
+    (if channel
       this
-      (do
-        (portfolio-thread/start rx rules-state)
-        (assoc this :init true))))
+      (let [c (a/chan 1 (portfolio-state-transducer {}) utils/ex-fn)
+            port-mix (a/mix c)]
+        (-> this
+            (assoc :mix port-mix)
+            (assoc :channel c)))))
   (stop [this]
-    (when init
-      (a/close! rx))
-    (assoc this :init false)))
+    (println "Stoping Port")
+    (when channel
+      (a/close! channel)
+      (assoc this :channel nil))))
 
-(defn make [rx order-manager-chan signals]
-  (map->Portfolio {:init false
-                   :rx rx
-                   :rules-state (atom (rules/create-session #(a/>!! order-manager-chan %) signals))}))
+(defn make []
+  (map->Portfolio {}))
