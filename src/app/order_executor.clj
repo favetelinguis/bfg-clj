@@ -16,6 +16,7 @@
         (a/go-loop []
           (when-let [x (a/<! o-c)]
             (println "Inside OrderExecutor loop")
+            ; TODO cond either make rest call to open order or send event to portfolio from order store
             (a/go (a/>! c {:acc x})))
           (recur))
         (-> this
@@ -24,3 +25,6 @@
     (println "Stoping OrderExecutor")
     (when channel
       (assoc this :channel nil))))
+
+(defn make []
+  (map->OrderExecutor {}))

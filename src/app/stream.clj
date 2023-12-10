@@ -1,7 +1,8 @@
 (ns app.stream
   (:require [com.stuartsierra.component :as component]
             [clojure.core.async :as a]
-            [ig.stream.connection :as stream]))
+            [ig.stream.connection :as stream]
+            [ig.stream.item :as i]))
 
 (defrecord IgStream [connection channel topic config auth-context]
   component/Lifecycle
@@ -12,7 +13,7 @@
             {:keys [session]} auth-context
             conn (stream/create-connection data session)
             c (a/chan 1)
-            topic (a/pub c :route)]
+            topic (a/pub c #(i/get-route (get % "ROUTE")))]
         (stream/connect! conn)
         (-> this
             (assoc :channel c)

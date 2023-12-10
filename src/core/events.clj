@@ -13,7 +13,8 @@
                 ::fill
                 ::position-new
                 ::position-update
-                ::position-exit})
+                ::position-exit
+                ::unsubscribed})
 
 (defn create-candle-event
   [epic t h l o c]
@@ -61,3 +62,8 @@
    ::size size
    ::direction direction
    ::kind ::position-new})
+
+(defn unsubscribe-new
+  [epic]
+  {::name epic
+   ::kind ::unsubscribed})

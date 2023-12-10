@@ -1,24 +1,22 @@
 (ns app.account-store
   (:require [com.stuartsierra.component :as component]
             [clojure.core.async :as a]
+            [ig.account-cache :as account-cache]
             [app.transducer-utils :as utils]))
 
-(defn a-store-state-transducer [state]
-  (let [f (fn [old event]
-            (println "a-store-x")
-            [[{:cand 3} {:pri 3}] (merge old event)])]
-    (utils/make-state-transducer f state)))
-
-(defrecord AccountStore [channel connection portfolio]
+;; Currently there is no way to change account or remove account, we only suupport singe account
+(defrecord AccountStore [channel stream portfolio]
   component/Lifecycle
   (start [this]
     (println "Starting AccountStore")
     (if channel
       this
-      (let [{:keys [topic]} connection
+      (let [{:keys [topic]} stream
             {:keys [mix]} portfolio
-            c (a/chan 1 (a-store-state-transducer {}) utils/ex-fn)]
-        (a/sub topic :account c)
+            c (a/chan 1 (utils/make-state-transducer
+                         account-cache/update-cache
+                         (account-cache/make)) utils/ex-fn)]
+        (a/sub topic "ACCOUNT" c)
         (a/admix mix c)
         (-> this
             (assoc :channel c)))))

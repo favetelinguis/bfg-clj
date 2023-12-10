@@ -1,6 +1,10 @@
 (ns ig.market-cache
-  (:require [core.events :as e])
+  (:require [core.events :as e]
+            [ig.stream.item :as i])
   (:import [java.time Instant]))
+
+;; This cache is part of the stateful transducers it must have the function signature
+;; (fn [old-cache event] [[::e/events to propagate] updated-cache])
 
 (defn make
   ([]
@@ -12,9 +16,9 @@
 
 (defn update-status
   "This never produce events, it only provide metadata about the market, should be used
-  the check if data is delayed etc"
+  to check if data is delayed etc"
   [[_ market-cache] change]
-  (let [epic (get change "NAME")]
+  (let [epic (i/get-name (get change "ROUTE"))]
     (make (update market-cache epic merge change))))
 
 (defn update-candle
@@ -23,7 +27,7 @@
   [[_ market-cache] change]
   (let [complete-candle? (= (get change "CONS_END") "1")
         mid-price-change? (or (get change "OFR_CLOSE") (get change "BID_CLOSE"))
-        epic (get change "NAME")
+        epic (i/get-name (get change "ROUTE"))
         new-market-cache (update market-cache epic merge change)
         calculate-mid-price (fn [bid ofr]
                               (let [x (Double/parseDouble (get-in new-market-cache [epic ofr]))
@@ -44,5 +48,14 @@
     (make events new-market-cache)))
 
 (defn remove-epic
-  [[_ m] epic]
-  (make (dissoc m epic)))
+  [[_ m] change]
+  (let [epic (i/get-name (get "ROUTE" change))]
+    (make (dissoc m epic))))
+
+(defn update-cache [old event]
+  (let [route (get event "ROUTE")]
+    (cond
+      (i/market? route) (update-status old event)
+      (i/chart? route) (update-candle old event)
+      (i/unsubscribe? route) (remove-epic old event)
+      :else (println "Unsupported event: " event))))

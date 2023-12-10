@@ -54,7 +54,6 @@
    :web-server
    (component/using (server-component/make port)
                     [:auth-context :strategy-store])))
-
 (defn -main
   [& [port]]
   (let [port (or port (get (System/getenv) "PORT" 8080))
@@ -66,5 +65,3 @@
     (.addShutdownHook
      (Runtime/getRuntime)
      (new Thread #(component/stop-system system)))))
-
-(component/start (create-system {:port 333}))

@@ -2,24 +2,23 @@
   (:require
    [com.stuartsierra.component :as component]
    [app.transducer-utils :as utils]
-   [clojure.core.async :as a]))
+   [clojure.core.async :as a]
+   [ig.market-cache :as market-cache]))
 
-(defn m-store-state-transducer [state]
-  (let [f (fn [old event]
-            (println "m-store-x")
-            [[{:cand 3} {:pri 3}] (merge old event)])]
-    (utils/make-state-transducer f state)))
-
-(defrecord InstrumentStore [channel market-topic connection]
+(defrecord InstrumentStore [channel market-topic stream]
   component/Lifecycle
   (start [this]
     (println "Starting InstrumentStore")
     (if channel
       this
-      (let [{:keys [topic]} connection
-            c (a/chan 1 (m-store-state-transducer {}) utils/ex-fn)
+      (let [{:keys [topic]} stream
+            c (a/chan 1 (utils/make-state-transducer
+                         market-cache/update-cache
+                         (market-cache/make)) utils/ex-fn)
             m-topic (a/pub c :epic)]
-        (a/sub topic :market c)
+        (a/sub topic "UNSUBSCRIBE" c)
+        (a/sub topic "MARKET" c)
+        (a/sub topic "CHART" c)
         (-> this
             (assoc :market-topic m-topic)
             (assoc :channel c)))))

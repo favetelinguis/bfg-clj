@@ -10,7 +10,9 @@
             [cheshire.core :as djson]
             [org.httpkit.client :as client]
             [ig.rest :as rest]
-            [core.portfolio.rules :as rules]))
+            [core.portfolio.rules :as rules]
+            [ig.stream.subscription :as subscription]
+            [ig.stream.connection :as stream]))
 
 (set-init
  (fn [_]
@@ -26,10 +28,17 @@
   (:market-generator system)
   (let [{:keys [rules-state]} (get-in system [:portfolio])]
     (rules/get-signals @rules-state))
+  (def mysub (let [connection (:connection (:stream system))
+                   market-sub (subscription/new-market-subscription "IX.D.DAX.IFMM.IP"
+                                                                    (fn [event]
+                                                                      (println event)))]
+               (stream/subscribe! connection market-sub)
+               market-sub))
+
   (let [connection (:connection (:stream system))]
-    (igstream/get-subscriptions connection)
-    ;; (igstream/get-status connection)
-    )
+    ;; (stream/get-subscriptions connection)
+    (stream/unsubscribe! connection mysub))
+
   @(get-in system [:stream :market-cache-state])
   @((get-in system [:auth-context :http-client]) (rest/open-order  "IX.D.DAX.IFMM.IP" "BUY" 1 "EUR"))
   @((get-in system [:auth-context :http-client]) (rest/close-order "DIAAAANL43VHHA8" "SELL" 1))
