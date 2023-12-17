@@ -1,52 +1,58 @@
 (ns ig.order-cache
   (:require [core.events :as e]
             [ig.stream.item :as i]
-            [cheshire.core :as json]))
+            [cheshire.core :as json]
+            [ig.cache :as cache]))
 
-;; This cache is part of the stateful transducers it must have the function signature
-;; (fn [old-cache event] [[::e/events to propagate] updated-cache])
+;; Makes sure only one order is avaliable/market
 
-(defn make
-  ([]
-   (make {}))
-  ([initial-cache]
-   (make [] initial-cache))
-  ([events initial-cache]
-   [events initial-cache]))
+(defn- maybe-open-order
+  [[_ old] change]
+  (let [epic (::e/name change)
+        has-order? (get old epic)]
+    (if has-order?
+      (cache/make old)
+      (cache/make [change]
+                  (assoc old epic :order-initiated)))))
+
+(defn- remove-order
+  [[_ old] change]
+  (let [epic (::e/name change)
+        has-order? (not (nil? (get old epic)))]
+    (if-not has-order?
+      (cache/make old)
+      (cache/make [change]
+                  (dissoc old epic)))))
 
 (defn update-confirms
-  "Signal when order is acc"
-  [old change]
-  (let [account (i/get-name (get change "ROUTE"))]
-    (make
-     (update old account merge change))))
+  "dealStatus ACCEPTED|REJECTED"
+  [events+cache change]
+  (let [[_ old] events+cache
+        epic (:epic change)
+        status (:dealStatus change)]
+    (if (= status "REJECTED")
+      (remove-order events+cache (e/exit epic))
+      (if (not (nil? (get old epic)))
+        (cache/make (assoc old epic :order-confirmed))
+        (cache/make old)))))
 
-(defn update-opu
-  "Signal when order goes to position"
-  [old change]
-  (let [account (i/get-name (get change "ROUTE"))]
-    (make
-     (update old account merge change))))
+(defn- update-opu
+  "Do nothing atm"
+  [events+cache change]
+  events+cache)
 
-(defn update-wou
-  [old change]
-  (let [account (i/get-name (get change "ROUTE"))]
-    (make
-     (update old account merge change))))
+(defn- update-wou
+  "Do nothing atm"
+  [events+cache change]
+  events+cache)
 
-(defn maybe-open-order
-  [old change]
-  (let [account (i/get-name (get change "ROUTE"))]
-    (make
-     [] ; TODO logic to maybe open order
-     (update old account merge change))))
-
-(defn update-cache [old event]
+(defn update-cache
   "Either I get update from stream, can be 3 different types or
    its a create order event from portfolio, only create order event should create event"
+  [old event]
   (let [route (get event "ROUTE")]
     (cond
-      (i/trade? route) (let []
+      (i/trade? route) (do
                          (when-let [data (get event "CONFIRMS")]
                            (update-confirms old (json/decode data true)))
                          (when-let [data (get event "OPU")]
@@ -55,4 +61,6 @@
                            (update-wou old (json/decode data true))))
       (= ::e/order-new
          (::e/kind event)) (maybe-open-order old event)
-      :else (println "Unsupported event: " event))))
+      (= ::e/exit
+         (::e/kind event)) (remove-order old event)
+      :else (println "Unsupported event order: " event))))

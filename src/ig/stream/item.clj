@@ -38,7 +38,7 @@
   (when item
     (let [parts (str/split item #":")]
       (if (unsubscribe? item)
-        (nth parts 3)
+        (nth parts 2)
         (second parts)))))
 
 (defn trade-item

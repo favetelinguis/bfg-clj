@@ -1,4 +1,5 @@
 #+title: Readme
+#+startup: inlineimages
 
 Run tests with
 clj -X:test
@@ -6,5 +7,24 @@ clj -X:test
 run program
 clj -m main
 
-* TODOs
-* Notes
+#+NAME: Market update generates signal
+#+begin_src plantuml :file ./images/signal.png
+title Signal
+
+Stream->Market: ROUTE :CHART:id
+Stream->Market: ROUTE :MARKET:id
+Stream->Market: ROUTE :UNSUBSCRIBE:CHART:id
+Stream->Market: ROUTE :UNSUBSCRIBE:MARKET:id
+Stream->Order: ROUTE :TRADE:id
+Stream->Account: ROUTE :ACCOUNT:id
+Market->Strategy1: ::e/name
+Strategy1->Portfolio ::e/signal
+Account->Portfolio ::e/balance
+Portfolio->Order ::e/make-order
+Order->CommandExecutor ::e/make-order
+CommandExecutor->Order ::e/exit
+Order->Portfolio ::e/exit
+#+end_src
+
+#+RESULTS: Market update generates signal
+[[file:./images/signal.png]]

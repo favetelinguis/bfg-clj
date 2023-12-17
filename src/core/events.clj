@@ -9,11 +9,9 @@
                 ::mid-price
                 ::balance
                 ::order-new
-                ::order-update
-                ::fill
-                ::position-new
-                ::position-update
-                ::position-exit
+                ::exit
+                ::filled
+                ::signal
                 ::unsubscribed})
 
 (defn create-candle-event
@@ -52,9 +50,13 @@
   [epic direction size]
   {::name epic
    ::size size
-   ::uuid (str (java.util.UUID/randomUUID))
    ::direction direction
    ::kind ::order-new})
+
+(defn exit
+  [epic]
+  {::name epic
+   ::kind ::exit})
 
 (defn position-new
   [epic direction size]
@@ -67,3 +69,9 @@
   [epic]
   {::name epic
    ::kind ::unsubscribed})
+
+(defn signal-new
+  [epic direction]
+  {::name epic
+   ::direction direction
+   ::kind ::signal})
