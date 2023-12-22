@@ -7,9 +7,9 @@ clj -X:test
 run program
 clj -m main
 
-#+NAME: Market update generates signal
+#+NAME: All event flows
 #+begin_src plantuml :file ./images/signal.png
-title Signal
+title All event flows
 
 Stream->Market: ROUTE :CHART:id
 Stream->Market: ROUTE :MARKET:id
@@ -24,7 +24,23 @@ Portfolio->Order ::e/make-order
 Order->CommandExecutor ::e/make-order
 CommandExecutor->Order ::e/exit
 Order->Portfolio ::e/exit
+Order->Portfolio ::e/filled
 #+end_src
 
-#+RESULTS: Market update generates signal
+#+RESULTS: All event flows
 [[file:./images/signal.png]]
+
+#+NAME: Order open to close flow
+#+begin_src plantuml :file ./images/order.png
+title Order open to exit flow
+
+[*] --> OrderInitiated : ::e/order-new
+state c <<choice>>
+OrderInitiated --> c
+c --> OrderFilled : ::e/filled
+c --> [*] : ::e/exit
+OrderFilled --> [*] : ::e/exit
+#+end_src
+
+#+RESULTS: Order open to close flow
+[[file:./images/order.png]]

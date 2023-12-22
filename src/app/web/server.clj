@@ -12,7 +12,7 @@
     (handler (assoc request :dependencies dependencies))))
 
 (defrecord HttpServerComponent
-           [port steam portfolio auth-context order-manager web-server]
+           [port web-server auth-context strategy-store]
   component/Lifecycle
   (start [this]
     (println "Starting HttpServerCompoent")

@@ -1,6 +1,8 @@
 (ns ig.application
   (:require [clojure.core.async :as a]
             [ig.market-cache :as market-cache]
+            [ig.order-cache :as order-cache]
+            [ig.portfolio :as portfolio]
             [ig.cache :as cache]
             [ig.account-cache :as account-cache]
             [ig.stream.item :as i]
@@ -23,14 +25,14 @@
         (f out-> x)
         (recur)))))
 
-(defn app
+(defn start-app
   ""
-  ([f] (app f nil))
+  ([f] (start-app f nil))
   ([f debug-fn]
    (let [kill-switch (a/chan 1)
          ig-rate-limit 30 ; 30/min can be higher for trade events
          token-bucket-chan (a/chan (a/dropping-buffer ig-rate-limit))
-         stream-chan-> (a/chan 1)
+         stream-chan-> (a/chan 1) ; TODO add transducer to infere correct event
          stream-topic (a/pub stream-chan-> #(i/get-route (get % "ROUTE")))
          ->portfolio-chan (a/chan 1)
          portfolio-mix (a/mix ->portfolio-chan)
@@ -56,14 +58,15 @@
                                      (debug-fn :killed)
                                      (debug-fn in-event)))
                                  (when in-event
-                                   (let [[out-events next-state] (f [[] prev-state] in-event)]
+                                   (let [events+next-state (f prev-state in-event)
+                                         [out-events _] events+next-state]
                                      (doseq [e out-events]
                                        (a/>! out-> e))
-                                     (recur next-state)))))))
+                                     (recur events+next-state)))))))
          go-instrument-store (go-make-handler ->instrument-chan instrument-chan-> market-cache/update-cache (cache/make))
          go-account-store (go-make-handler ->account-chan account-chan-> account-cache/update-cache (cache/make))
-         go-order-store (go-make-handler ->order-chan order-chan-> market-cache/update-cache (cache/make))
-         go-portfolio (go-make-handler ->portfolio-chan portfolio-chan-> market-cache/update-cache (cache/make))]
+         go-order-store (go-make-handler ->order-chan order-chan-> order-cache/update-cache (cache/make))
+         go-portfolio (go-make-handler ->portfolio-chan portfolio-chan-> portfolio/update-cache (cache/make))]
      ;; Instrument need
      (a/sub stream-topic "UNSUBSCRIBE" ->instrument-chan)
      (a/sub stream-topic "MARKET" ->instrument-chan)
@@ -97,6 +100,8 @@
                                    ;; Strategy send to
                                    (a/admix portfolio-mix strategy-chan->)
                                    ;; Start strategy
-                                   (go-make-handler ->strategy-chan strategy-chan-> f m)))
+                                   (go-make-handler ->strategy-chan strategy-chan-> f m)
+                                   ;; Return for easy close
+                                   ->strategy-chan))
       :kill-app (fn [] (a/close! kill-switch))
       :send-to-app!! (fn [event] (a/>!! stream-chan-> event))})))

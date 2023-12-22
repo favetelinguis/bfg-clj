@@ -31,11 +31,11 @@
 ;;-----------------------------
 ;;
 ;; Open and close using open order
-;; {:dealIdOrigin DIAAAANL45UBMAL, :stopLevel nil, :dealStatus ACCEPTED, :expiry -, :channel PublicRestOTC, :size 1, :level 14707.9, :dealReference PPUVZFA4JACTYPT, :status OPEN, :epic IX.D.DAX.IFMM.IP, :limitLevel nil, :ig.order-manager/kind :opu, :guaranteedStop false, :timestamp 2023-10-30T17:01:34.703, :dealId DIAAAANL45UBMAL, :direction SELL}
 ;; {:stopLevel nil, :dealStatus ACCEPTED, :date 2023-10-30T17:01:34.713, :expiry -, :affectedDeals [{:dealId DIAAAANL45UBMAL, :status OPENED}], :profit nil, :channel PublicRestOTC, :limitDistance nil, :size 1, :level 14707.9, :dealReference PPUVZFA4JACTYPT, :reason SUCCESS, :status OPEN, :epic IX.D.DAX.IFMM.IP, :trailingStop false, :profitCurrency nil, :limitLevel nil, :ig.order-manager/kind :confirms, :stopDistance nil, :guaranteedStop false, :dealId DIAAAANL45UBMAL, :direction SELL}
+;; {:dealIdOrigin DIAAAANL45UBMAL, :stopLevel nil, :dealStatus ACCEPTED, :expiry -, :channel PublicRestOTC, :size 1, :level 14707.9, :dealReference PPUVZFA4JACTYPT, :status OPEN, :epic IX.D.DAX.IFMM.IP, :limitLevel nil, :ig.order-manager/kind :opu, :guaranteedStop false, :timestamp 2023-10-30T17:01:34.703, :dealId DIAAAANL45UBMAL, :direction SELL}
 ;; Close
-;; {:dealIdOrigin DIAAAANL45UBMAL, :stopLevel nil, :dealStatus ACCEPTED, :expiry -, :channel PublicRestOTC, :size 0, :level 14710.7, :dealReference PPUVZFA4JACTYPT, :status DELETED, :epic IX.D.DAX.IFMM.IP, :limitLevel nil, :ig.order-manager/kind :opu, :guaranteedStop false, :timestamp 2023-10-30T17:02:01.144, :dealId DIAAAANL45UBMAL, :direction SELL}
 ;; {:stopLevel nil, :dealStatus ACCEPTED, :date 2023-10-30T17:02:01.152, :expiry -, :affectedDeals [{:dealId DIAAAANL45UBMAL, :status FULLY_CLOSED}], :profit -33.29, :channel PublicRestOTC, :limitDistance nil, :size 1, :level 14710.7, :dealReference UAU9JJHPNWYTYPT, :reason SUCCESS, :status CLOSED, :epic IX.D.DAX.IFMM.IP, :trailingStop false, :profitCurrency SEK, :limitLevel nil, :ig.order-manager/kind :confirms, :stopDistance nil, :guaranteedStop false, :dealId DIAAAANL45UBMAL, :direction BUY}
+;; {:dealIdOrigin DIAAAANL45UBMAL, :stopLevel nil, :dealStatus ACCEPTED, :expiry -, :channel PublicRestOTC, :size 0, :level 14710.7, :dealReference PPUVZFA4JACTYPT, :status DELETED, :epic IX.D.DAX.IFMM.IP, :limitLevel nil, :ig.order-manager/kind :opu, :guaranteedStop false, :timestamp 2023-10-30T17:02:01.144, :dealId DIAAAANL45UBMAL, :direction SELL}
 ;;
 (def rejected-confirms-order
   {:stopLevel nil
@@ -80,6 +80,23 @@
    :limitLevel nil
    :stopDistance nil
    :guaranteedStop false
+   :dealId "DIAAAANL43VHHA8"
+   :direction "BUY"})
+
+(def filled-order
+  {:dealIdOrigin "DIAAAANL43VHHA8"
+   :stopLevel nil
+   :dealStatus "ACCEPTED"
+   :expiry -
+   :channel "PublicRestOTC"
+   :size 0
+   :level 14707.9
+   :dealReference "BXURXNUWV6CTYPT"
+   :status "DELETED"
+   :epic "IX.D.DAX.IFMM.IP"
+   :limitLevel nil
+   :guaranteedStop false
+   :timestamp "2023-10-30T16:53:56.393"
    :dealId "DIAAAANL43VHHA8"
    :direction "BUY"})
 

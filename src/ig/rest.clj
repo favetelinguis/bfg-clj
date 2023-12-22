@@ -35,7 +35,7 @@
                        "direction" direction
                        "size" size
                        "expiry" "-" ; could vary between markets?
-                       ;; "dealReference" "TODO" ; optional user generated id
+                       "dealReference" epic
                        "currencyCode" currencyCode
                        "forceOpen" false
                        "guaranteedStop" false

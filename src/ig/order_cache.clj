@@ -5,6 +5,8 @@
             [ig.cache :as cache]))
 
 ;; Makes sure only one order is avaliable/market
+;; Confirms ONLY handle rejected orders after trying to open them
+;; OPU used for all other changes to orders
 
 (defn- maybe-open-order
   [[_ old] change]

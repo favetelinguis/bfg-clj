@@ -10,7 +10,6 @@
             [cheshire.core :as djson]
             [org.httpkit.client :as client]
             [ig.rest :as rest]
-            [core.portfolio.rules :as rules]
             [ig.stream.subscription :as subscription]
             [ig.stream.connection :as stream]))
 
@@ -26,8 +25,7 @@
   (get-in system [:auth-context :http-client])
   (ns-unalias 'dev 'igstream)
   (:market-generator system)
-  (let [{:keys [rules-state]} (get-in system [:portfolio])]
-    (rules/get-signals @rules-state))
+
   (def mysub (let [connection (:connection (:stream system))
                    market-sub (subscription/new-market-subscription "IX.D.DAX.IFMM.IP"
                                                                     (fn [event]

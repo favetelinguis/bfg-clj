@@ -10,10 +10,7 @@
             [clojure.core.async :as a]
             [ig.market-cache :as market-cache]
             [ig.rest :as rest]
-            [ig.stream.item :as item]
-            [ig.stream.item :as i]
-            [core.portfolio.rules :as rules]
-            [core.signal :as signal]))
+            [ig.stream.item :as i]))
 
 (defn- page-title
   [title]
@@ -73,7 +70,7 @@
                                                                    (doseq [m more]
                                                                      (a/>!! rx m))) market-cache-state)]
        (when (empty? (subscription/get-subscriptions-matching subscriptions (i/market-item epic)))
-         (swap! rules-state rules/subscribe-market epic)
+         ;; (swap! rules-state rules/subscribe-market epic)
          (stream/subscribe! connection market-sub candle-sub))
        (response/redirect "/market/subscription/list" :see-other)))
 
@@ -86,7 +83,7 @@
            candle-sub (first (subscription/get-subscriptions-matching subs (i/chart-candle-1min-item epic)))]
        (when market-sub
          (stream/unsubscribe! connection market-sub candle-sub)
-         (swap! rules-state rules/unsubscribe-market epic)
+         ;; (swap! rules-state rules/unsubscribe-market epic)
          (swap! market-cache-state market-cache/remove-epic epic))
        (response/redirect "/market/subscription/list" :see-other)))
 
@@ -135,7 +132,7 @@
                    (subscription/get-subscriptions-matching (i/account-item accountId))
                    (first)
                    (subscription/get-item)
-                   (item/get-name))]
+                   (i/get-name))]
        (-> (views/account-list accounts accountId sub)
            ui-component
            ok)))
@@ -145,7 +142,7 @@
            {:keys [connection]} (get-in request [:dependencies :stream])
            markets (-> (stream/get-subscriptions connection)
                        (subscription/get-subscribed-epics))
-           strategies (rules/get-all-signals @rules-state)]
+           strategies [] #_(rules/get-all-signals @rules-state)]
        (-> (views/signal-list strategies markets)
            (ui-component)
            (ok))))
@@ -155,7 +152,7 @@
      (let [{:keys [id epic]} (:params request)
            {:keys [rules-state]} (get-in request [:dependencies :portfolio])]
        (when (and epic id)
-         (swap! rules-state rules/activate-signal-for-market id epic)
+         ;; (swap! rules-state rules/activate-signal-for-market id epic)
          (response/redirect "/signal/list" :see-other))))
 
    (DELETE "/signal/:id" request
@@ -163,7 +160,7 @@
      (let [{:keys [id epic]} (:params request)
            {:keys [rules-state]} (get-in request [:dependencies :portfolio])]
        (when (and epic id)
-         (swap! rules-state rules/deactivate-signal-for-market id epic)
+         ;; (swap! rules-state rules/deactivate-signal-for-market id epic)
          (response/redirect "/signal/list" :see-other))))
 
    (route/not-found

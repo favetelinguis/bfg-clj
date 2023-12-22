@@ -1,11 +1,16 @@
 (ns core.events
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s])
+  (:import [java.time Instant]))
 
 (s/def ::epic string?)
 
 ;; TODO define more complete specs for events
 
-(s/def ::kind #{::candle
+(s/def ::kind #{::trade
+                ::chart
+                ::market
+                ::account
+                ::candle
                 ::mid-price
                 ::balance
                 ::order-new
@@ -13,6 +18,18 @@
                 ::filled
                 ::signal
                 ::unsubscribed})
+
+(defn make-event
+  ([kind payload] (make-event kind payload (Instant/now)))
+  ([kind payload x]
+   {::kind kind
+    ::ingest-time x
+    ::payload payload}))
+
+(def make-trade-event (partial make-event ::trade))
+(def make-chart-event (partial make-event ::chart))
+(def make-market-event (partial make-event ::market))
+(def make-account-event (partial make-event ::account))
 
 (defn create-candle-event
   [epic t h l o c]

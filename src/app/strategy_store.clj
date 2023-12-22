@@ -1,13 +1,13 @@
 (ns app.strategy-store
   (:require [com.stuartsierra.component :as component]
-            [app.transducer-utils :as utils]
             [clojure.core.async :as a]
             [clojure.string :as str]
+            [core.signal :as signal]
             [ig.stream.connection :as stream]
             [ig.stream.subscription :as subscription]
             [ig.stream.item :as i]))
 
-(defrecord StrategyStore [state instrument-store port stream]
+(defrecord StrategyStore [state application stream]
   component/Lifecycle
   (start [this]
     (println "Starting StrategyStore")
@@ -24,32 +24,22 @@
 (defn make []
   (map->StrategyStore {}))
 
-(defn make-strategy
-  "f should be a function of form (fn [prev-state event] [[<sig events>] new-state])"
-  [f start-state]
-  (utils/make-state-transducer f start-state))
-
 (defn add
-  "s is the string name of the strategy
-  markets are epic names as strings"
-  [store s strategy markets]
-  (let [{:keys [market-topic]} (:instrument-store store)
-        {:keys [mix]} (:portfolio store)
-        {:keys [connection channel]} (:stream store)
+  "sig is impl protocol Signal
+  markets is seq of epic names for wich to subscribe signal to"
+  [store sig markets]
+  (let [{:keys [connection]} (:stream store)
+        {:keys [make-strategy send-to-app!!]} (:application store)
         {:keys [state]} store
         candle-sub (fn [m] (subscription/new-candle-subscription (i/chart-candle-1min-item m)
-                                                                 (fn [event]
-                                                                   (a/>!! channel event))))
-        market-sub (fn [m] (subscription/new-market-subscription m (fn [event]
-                                                                     (a/>!! channel event))))
+                                                                 send-to-app!!))
+        market-sub (fn [m] (subscription/new-market-subscription m))
         subscribed-markets (->> (keys @state)
                                 (map #(second (clojure.string/split % #"_")))
                                 (into #{}))
-        setup-strategy! (fn [m]
-                          (let [c (a/chan 1 strategy utils/ex-fn)]
-                            (a/sub market-topic m c)
-                            (a/admix mix c)
-                            (swap! state assoc (str s "_" m) c)))]
+        setup-strategy! (fn [market]
+                          (let [c (make-strategy signal/on-update sig market)]
+                            (swap! state assoc (str (signal/get-name sig) "_" market) c)))]
     (doseq [market markets]
       (setup-strategy! market)
       (when-not (contains? subscribed-markets market)
