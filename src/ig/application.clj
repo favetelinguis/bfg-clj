@@ -17,19 +17,16 @@
         (recur)))))
 
 (defn go-command-executor
-  [f ->in out-> bucket-chan kill-switch]
-  (a/go-loop []
-    (let [[c x] (a/alts! [kill-switch ->in])]
-      (when (= c ->in)
-        (a/<! bucket-chan) ; ratelimit, will block until we have a token
-        (f out-> x)
-        (recur)))))
+  "TODO need debug-fn here also"
+  [f ->in out-> bucket-chan kill-switch])
 
 (defn start-app
-  ""
+  "f is the command executor function
+  debug-fn gets all output events in system and runs in its own thread"
   ([f] (start-app f nil))
   ([f debug-fn]
    (let [kill-switch (a/chan 1)
+         ->debug-chan (a/chan (a/dropping-buffer 500))
          ig-rate-limit 30 ; 30/min can be higher for trade events
          token-bucket-chan (a/chan (a/dropping-buffer ig-rate-limit))
          stream-chan-> (a/chan 1) ; TODO add transducer to infere correct event
@@ -52,16 +49,14 @@
                            [->in out-> f m]
                            (fn []
                              (a/go-loop [prev-state m]
-                               (let [[in-event c] (a/alts! [->in kill-switch])]
-                                 (when debug-fn
-                                   (if (= kill-switch c)
-                                     (debug-fn :killed)
-                                     (debug-fn in-event)))
+                               (let [[in-event _] (a/alts! [->in kill-switch])]
                                  (when in-event
                                    (let [events+next-state (f prev-state in-event)
                                          [out-events _] events+next-state]
                                      (doseq [e out-events]
-                                       (a/>! out-> e))
+                                       (a/>! out-> e)
+                                       (when debug-fn
+                                         (a/>! ->debug-chan e)))
                                      (recur events+next-state)))))))
          go-instrument-store (go-make-handler ->instrument-chan instrument-chan-> market-cache/update-cache (cache/make))
          go-account-store (go-make-handler ->account-chan account-chan-> account-cache/update-cache (cache/make))
@@ -89,7 +84,33 @@
      (go-account-store)
      (go-order-store)
      (go-portfolio)
+
+     ;; Command executor
+     (a/go-loop []
+       (let [[c x] (a/alts! [kill-switch ->command-executor-chan])
+             failure-fn (fn [] (let [e (e/exit "SOME EPIC")]
+                                 (a/>! command-executor-chan-> e)
+                                 (when debug-fn
+                                   (a/>! ->debug-chan e))))]
+         (when (= c ->command-executor-chan)
+           (a/<! token-bucket-chan) ; ratelimit, will block until we have a token
+           (f failure-fn x) ; TODO need to get epic name and http-client fn will have to change
+           (recur))))
      (go-command-executor f ->command-executor-chan command-executor-chan-> token-bucket-chan kill-switch)
+
+     ;; Setup debug-fn if needed, dont read from original chanel when using mult
+     (when debug-fn
+       (a/sub stream-topic "UNSUBSCRIBE" ->debug-chan)
+       (a/sub stream-topic "MARKET" ->debug-chan)
+       (a/sub stream-topic "CHART" ->debug-chan)
+       (a/sub stream-topic "ACCOUNT" ->debug-chan)
+       (a/sub stream-topic "TRADE" ->debug-chan)
+       (a/thread
+         (loop []
+           (let [[in-event _] (a/alts!! [->debug-chan kill-switch])]
+             (when in-event
+               (debug-fn in-event)
+               (recur))))))
 
      ;; Return
      {:make-strategy (fn [f m s] (let [->strategy-chan (a/chan 1)
@@ -105,3 +126,11 @@
                                    ->strategy-chan))
       :kill-app (fn [] (a/close! kill-switch))
       :send-to-app!! (fn [event] (a/>!! stream-chan-> event))})))
+
+(defn adf []
+  (let [c (a/chan 3)
+        p (a/pub)
+        mi (a/mix)
+        mu (a/mult)]
+    (a/admix)
+    (a/tap mu)))

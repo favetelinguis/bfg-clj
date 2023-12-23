@@ -10,7 +10,10 @@
     (if kill-app
       this
       (let [{:keys [http-client]} auth-context
-            {:keys [make-strategy kill-app send-to-app!!]} (start-app http-client)]
+            file-name (str "logs/" (.toString (java.time.LocalDateTime/now)) ".log")
+            debug-fn (fn [event] (spit file-name (str event "\n") :append true))
+            {:keys [make-strategy kill-app send-to-app!!]} (start-app http-client
+                                                                      debug-fn)]
         (-> this
             (assoc :make-strategy make-strategy)
             (assoc :kill-app kill-app)
