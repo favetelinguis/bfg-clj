@@ -17,7 +17,7 @@
         (recur)))))
 
 (defn go-command-executor
-  "TODO need debug-fn here also"
+  ""
   [f ->in out-> bucket-chan kill-switch])
 
 (defn start-app
@@ -127,10 +127,92 @@
       :kill-app (fn [] (a/close! kill-switch))
       :send-to-app!! (fn [event] (a/>!! stream-chan-> event))})))
 
-(defn adf []
-  (let [c (a/chan 3)
-        p (a/pub)
-        mi (a/mix)
-        mu (a/mult)]
-    (a/admix)
-    (a/tap mu)))
+(defn start-appv2
+  "f is the command executor function
+  debug-fn gets all output events in system and runs in its own thread"
+  ([f] (start-appv2 f println))
+  ([f debug-fn]
+   (let [kill-switch (a/chan 1)
+         ig-rate-limit 30 ; 30/min can be higher for trade events
+         token-bucket-chan (a/chan (a/dropping-buffer ig-rate-limit))
+         event-bus-> (a/chan 1) ; Will be out-chan of all command handler
+         ->event-sourcing-chan (a/chan (a/dropping-buffer 500)) ; make sure it do not block
+         event-topic-chan (a/chan 1)
+         event-bus-mult (a/mult event-bus->)
+         _ (a/tap event-bus-mult ->event-sourcing-chan)
+         _ (a/tap event-bus-mult event-topic-chan)
+         event-topic (a/pub event-topic-chan ::e/action)
+
+         ->portfolio-chan (a/chan 1)
+         ->instrument-chan (a/chan 1)
+         ->account-chan (a/chan 1)
+         ->order-chan (a/chan 1)
+         ->command-executor-chan (a/chan 1)
+         go-make-handler (fn
+                           [->in f m]
+                           (fn []
+                             (a/go-loop [prev-state m]
+                               (let [[in-event _] (a/alts! [->in kill-switch])]
+                                 (when in-event
+                                   (let [events+next-state (f prev-state in-event)
+                                         [out-events _] events+next-state]
+                                     (doseq [e out-events]
+                                       (a/>! event-bus-> e))
+                                     (recur events+next-state)))))))
+         go-instrument-store (go-make-handler ->instrument-chan  market-cache/update-cache (cache/make))
+         go-account-store (go-make-handler ->account-chan account-cache/update-cache (cache/make))
+         go-order-store (go-make-handler ->order-chan order-cache/update-cache (cache/make))
+         go-portfolio (go-make-handler ->portfolio-chan portfolio/update-cache (cache/make))]
+     ;; Market need
+     (a/sub event-topic ::e/chart ->instrument-chan)
+     (a/sub event-topic ::e/market ->instrument-chan)
+     (a/sub event-topic ::e/unsubscribe ->instrument-chan)
+     ;; Account need
+     (a/sub event-topic ::e/account ->account-chan)
+     ;; Order need
+     (a/sub event-topic ::e/trade ->order-chan)
+     (a/sub event-topic ::e/make-order ->order-chan)
+     (a/sub event-topic ::e/exit ->order-chan)
+     ;; Portfolio need + all strategies
+     (a/sub event-topic ::e/signal ->portfolio-chan)
+     (a/sub event-topic ::e/balance ->portfolio-chan)
+     (a/sub event-topic ::e/exit ->portfolio-chan)
+     (a/sub event-topic ::e/filled ->portfolio-chan)
+     ;; Command executor need
+     (a/sub event-topic ::e/make-order ->command-executor-chan)
+
+     ;; Start services
+     (go-token-adder token-bucket-chan kill-switch)
+     (go-instrument-store)
+     (go-account-store)
+     (go-order-store)
+     (go-portfolio)
+
+     ;; Command executor
+     (a/go-loop []
+       (let [[c x] (a/alts! [kill-switch ->command-executor-chan])
+             failure-fn (fn [] (let [e (e/exit "SOME EPIC")]
+                                 (a/>! event-bus-> e)))]
+         (when (= c ->command-executor-chan)
+           (a/<! token-bucket-chan) ; ratelimit, will block until we have a token
+           (f failure-fn x) ; TODO need to get epic name and http-client fn will have to change
+           (recur))))
+
+     ;; Event source
+     (a/thread
+       (loop []
+         (let [[in-event _] (a/alts!! [->event-sourcing-chan kill-switch])]
+           (when in-event
+             (debug-fn in-event)
+             (recur)))))
+
+     ;; Return
+     {:make-strategy (fn [f m s] (let [->strategy-chan (a/chan 1)]
+                                   ;; Strategy takes from
+                                   (a/sub event-topic s ->strategy-chan)
+                                   ;; Start strategy
+                                   (go-make-handler ->strategy-chan f m)
+                                   ;; Return for easy close
+                                   ->strategy-chan))
+      :kill-app (fn [] (a/close! kill-switch))
+      :send-to-app!! (fn [event] (a/>!! event-bus-> event))})))

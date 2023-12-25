@@ -92,3 +92,36 @@
   {::name epic
    ::direction direction
    ::kind ::signal})
+
+(s/def ::action #{; Events
+                  ::order-updated
+                  ; Commands
+                  ::create-order
+                  ; OLD
+                  ::trade
+                  ::chart
+                  ::market
+                  ::account
+                  ::candle
+                  ::mid-price
+                  ::balance
+                  ::order-new
+                  ::exit
+                  ::filled
+                  ::signal
+                  ::unsubscribed})
+
+(defn make-event
+  [action data]
+  {::id (random-uuid)
+   ::action action
+   ::data data
+   ::timestamp (Instant/now)})
+
+(defn make-command
+  [action data parent-id]
+  {::id (random-uuid)
+   ::parent-id parent-id
+   ::action action
+   ::data data
+   ::timestamp (Instant/now)})
