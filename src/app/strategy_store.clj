@@ -7,6 +7,12 @@
             [ig.stream.subscription :as subscription]
             [ig.stream.item :as i]))
 
+(def strategies
+  ;; TODO need better way to get name, want the same as is in get-name
+  {"DAXKiller" signal/make-dax-killer-signal
+   "DAXKiller2" signal/make-dax-killer-signal
+   "DAXKiller3" signal/make-dax-killer-signal})
+
 (defrecord StrategyStore [state application stream]
   component/Lifecycle
   (start [this]
@@ -25,21 +31,22 @@
   (map->StrategyStore {}))
 
 (defn add
-  "sig is impl protocol Signal
+  "sig is string pointing to what strategy to use
   markets is seq of epic names for wich to subscribe signal to"
   [store sig markets]
   (let [{:keys [connection]} (:stream store)
+        strategy ((get strategies sig))
         {:keys [make-strategy send-to-app!!]} (:application store)
         {:keys [state]} store
         candle-sub (fn [m] (subscription/new-candle-subscription (i/chart-candle-1min-item m)
                                                                  send-to-app!!))
-        market-sub (fn [m] (subscription/new-market-subscription m))
+        market-sub (fn [m] (subscription/new-market-subscription m send-to-app!!))
         subscribed-markets (->> (keys @state)
                                 (map #(second (clojure.string/split % #"_")))
                                 (into #{}))
         setup-strategy! (fn [market]
-                          (let [c (make-strategy signal/on-update sig market)]
-                            (swap! state assoc (str (signal/get-name sig) "_" market) c)))]
+                          (let [c (make-strategy signal/on-update strategy market)]
+                            (swap! state assoc (str (signal/get-name strategy) "_" market) c)))]
     (doseq [market markets]
       (setup-strategy! market)
       (when-not (contains? subscribed-markets market)
@@ -50,16 +57,15 @@
 (defn delete
   "strategy name string and market name string
   delete strategy from state and unsibscribe if it the only strategy for epic"
-  [store strategy epic]
+  [store s]
   (let [{:keys [state]} store
-        {:keys [mix]} (:port store)
         {:keys [connection]} (:stream store)]
-    (when-let [c (get-in @state [(str strategy "_" epic) :channel])]
-      (a/unmix mix c) ; TODO dont think i need to unmix a closed channel
+    (when-let [c (get @state s)]
       (a/close! c)
-      (swap! state dissoc (str strategy "_" epic))
-      (when (empty? (filter #(clojure.string/ends-with? % epic) @state))
-        (let [subs (stream/get-subscriptions connection)
-              market-sub (first (subscription/get-subscriptions-matching subs (i/market-item epic)))
-              candle-sub (first (subscription/get-subscriptions-matching subs (i/chart-candle-1min-item epic)))]
-          (stream/unsubscribe! connection market-sub candle-sub))))))
+      (swap! state dissoc s)
+      (let [[_ epic] (clojure.string/split s #"_")]
+        (when (empty? (filter #(clojure.string/ends-with? % epic) (keys @state)))
+          (let [subs (stream/get-subscriptions connection)
+                market-sub (first (subscription/get-subscriptions-matching subs (i/market-item epic)))
+                candle-sub (first (subscription/get-subscriptions-matching subs (i/chart-candle-1min-item epic)))]
+            (stream/unsubscribe! connection market-sub candle-sub)))))))

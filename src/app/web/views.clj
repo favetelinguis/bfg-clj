@@ -5,6 +5,7 @@
   [:nav
    [:a {:href "./"} "Home"]
    [:a {:href "./market"} "Handle markets"]
+   [:a {:href "./strategy"} "Handle strategies"]
    [:a {:href "./portfolio"} "View portfolio"]
    [:a {:href "./account"} "Handle account"]])
 
@@ -49,6 +50,30 @@
          [:p "What would you like to do?"]
          [:div#account-list {:hx-get "/account/list"
                              :hx-trigger "load"}]]))
+
+(defn strategy-main
+  "List all strategies in dropdown and an inputbox for epic names"
+  [strategies]
+  (list (menu)
+        [:main
+         [:h1 "Handle Strategy"]
+         [:form
+          [:label {:for "strategies"} "Avaliable strategies"]
+          [:select#strategies {:name "strategy"}
+           (for [strategy strategies]
+             [:option {:value strategy} strategy])]
+          [:label {:for "epics"} "Activate for epics:"]
+          [:input#epics {:name "epics" :type "text" :placeholder "Enter epics separate with ,"}]
+          [:button {:hx-post "/strategy"
+                    :hx-target "#strategy-list"} "Activate strategy"]]
+         [:div#strategy-list {:hx-get "/strategy/list"
+                              :hx-trigger "load"}]]))
+
+(defn strategy-list [strategies]
+  (for [s strategies]
+    [:li s
+     [:button {:hx-delete (str "/strategy/" s)
+               :hx-target "#strategy-list"} "Kill strategy"]]))
 
 (defn portfolio-main []
   (list (menu)

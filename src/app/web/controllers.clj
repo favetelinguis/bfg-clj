@@ -10,7 +10,9 @@
             [clojure.core.async :as a]
             [ig.market-cache :as market-cache]
             [ig.rest :as rest]
-            [ig.stream.item :as i]))
+            [app.strategy-store :as strategy-store]
+            [ig.stream.item :as i]
+            [clojure.string :as str]))
 
 (defn- page-title
   [title]
@@ -136,6 +138,30 @@
        (-> (views/account-list accounts accountId sub)
            ui-component
            ok)))
+
+   (GET "/strategy" request
+     (let [strategies (keys strategy-store/strategies)]
+       (-> (views/strategy-main strategies)
+           (layout {:title (page-title "Strategy")})
+           (ok))))
+
+   (GET "/strategy/list" request
+     (let [{:keys [state]} (get-in request [:dependencies :strategy-store])]
+       (-> (views/strategy-list (keys @state))
+           (ui-component)
+           (ok))))
+
+   (POST "/strategy" request
+     (let [{:keys [strategy epics]} (:params request)
+           {:keys [state] :as store} (get-in request [:dependencies :strategy-store])]
+       (strategy-store/add store strategy (clojure.string/split epics #","))
+       (response/redirect "/strategy/list" :see-other)))
+
+   (DELETE "/strategy/:key" request
+     (let [{:keys [key]} (:params request)
+           {:keys [state] :as store} (get-in request [:dependencies :strategy-store])]
+       (strategy-store/delete store key)
+       (response/redirect "/strategy/list" :see-other)))
 
    (GET "/signal/list" request
      (let [{:keys [rules-state]} (get-in request [:dependencies :portfolio])

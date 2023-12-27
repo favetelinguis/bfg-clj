@@ -159,10 +159,11 @@
                                      (doseq [e out-events]
                                        (a/>! event-bus-> e))
                                      (recur events+next-state)))))))
+
          go-instrument-store (go-make-handler ->instrument-chan  market-cache/update-cache (cache/make))
-         go-account-store (go-make-handler ->account-chan account-cache/update-cache (cache/make))
-         go-order-store (go-make-handler ->order-chan order-cache/update-cache (cache/make))
-         go-portfolio (go-make-handler ->portfolio-chan portfolio/update-cache (cache/make))]
+         go-account-store (go-make-handler ->account-chan  account-cache/update-cache (cache/make))
+         go-order-store (go-make-handler ->order-chan  order-cache/update-cache (cache/make))
+         go-portfolio (go-make-handler ->portfolio-chan  portfolio/update-cache (cache/make))]
      ;; Market need
      (a/sub event-topic ::e/chart ->instrument-chan)
      (a/sub event-topic ::e/market ->instrument-chan)
