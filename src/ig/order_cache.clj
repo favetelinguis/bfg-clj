@@ -33,7 +33,7 @@
         epic (:epic change)
         status (:dealStatus change)]
     (if (= status "REJECTED")
-      (remove-order events+cache (e/exit epic))
+      (remove-order events+cache (e/order-create-failure epic))
       (if (not (nil? (get old epic)))
         (cache/make (assoc old epic :order-confirmed))
         (cache/make old)))))
@@ -48,21 +48,27 @@
   [events+cache change]
   events+cache)
 
+(defn- update-account
+  "Do nothing atm"
+  [events+cache change]
+  events+cache)
+
+(defn- update-signal
+  "Do nothing atm"
+  [events+cache change]
+  events+cache)
+
 (defn update-cache
-  "Either I get update from stream, can be 3 different types or
-   its a create order event from portfolio, only create order event should create event"
-  [old event]
-  (let [route (get event "ROUTE")]
-    (cond
-      (i/trade? route) (do
-                         (when-let [data (get event "CONFIRMS")]
-                           (update-confirms old (json/decode data true)))
-                         (when-let [data (get event "OPU")]
-                           (update-opu old (json/decode data true)))
-                         (when-let [data (get event "WOU")]
-                           (update-wou old (json/decode data true))))
-      (= ::e/order-new
-         (::e/kind event)) (maybe-open-order old event)
-      (= ::e/exit
-         (::e/kind event)) (remove-order old event)
-      :else (println "Unsupported event order: " event))))
+  [prev {:keys [::e/action ::e/data] :as event}]
+  (case action
+    "TRADE" (do
+              (when-let [s (get data "CONFIRMS")]
+                (update-confirms prev (json/decode s true)))
+              (when-let [s (get data "OPU")]
+                (update-opu prev (json/decode s true)))
+              (when-let [s (get data "WOU")]
+                (update-wou prev (json/decode s true))))
+    "ACCOUNT" (update-account prev data)
+    "SIGNAL" (update-signal prev data)
+    "ORDER-CREATE-FAILURE" (remove-order prev data)
+    (println "Unsupported event in order-cache: " event)))

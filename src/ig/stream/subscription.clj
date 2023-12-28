@@ -16,8 +16,11 @@
   [item callback]
   (reify
     SubscriptionListener
-    (onUnsubscription [this] (callback {"ROUTE" (str "UNSUBSCRIBE:" item)}))
-    (onItemUpdate [this item-update] (callback (i/into-map item-update)))
+    (onCommandSecondLevelItemLostUpdates [this lostUpdates key] (println "IN onCommandSecondLevelItemLostUpdates"))
+    (onItemLostUpdates [this itemName itemPos lostUpdates] (println "IN onItemLostUpdates"))
+    (onUnsubscription [this] (callback (e/unsubscribe {::e/name (i/get-name item) ::e/route (i/get-route item)})))
+    (onSubscription [this] (callback (e/subscribe {::e/name (i/get-name item) ::e/route (i/get-route item)})))
+    (onItemUpdate [this item-update] (callback (e/stream-update (i/get-route item) (i/into-map item-update))))
     (onSubscriptionError [this code message] (println (str code ": " message " for " item)))))
 
 (defn- new-subscription

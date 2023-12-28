@@ -3,6 +3,7 @@
             [hiccup2.core :as hv]
             [main]
             [app.web.views :as devv]
+            [clojure.spec.test.alpha :as stest]
             [ig.stream.connection :as igstream]
             [ig.stream.subscription :as igsubscription]
             [ig.rest :as igrest]
@@ -11,7 +12,9 @@
             [org.httpkit.client :as client]
             [ig.rest :as rest]
             [ig.stream.subscription :as subscription]
-            [ig.stream.connection :as stream]))
+            [ig.stream.connection :as stream]
+            [core.events :as e]
+            [clojure.core.async :as a]))
 
 (set-init
  (fn [_]
@@ -36,8 +39,9 @@
   (let [connection (:connection (:stream system))]
     ;; (stream/get-subscriptions connection)
     (stream/unsubscribe! connection mysub))
-
-  @(get-in system [:stream :market-cache-state])
+  (stest/instrument `unsubscribe)
+  (clojure.core.async/>!! (get @(get-in system [:strategy-store :state]) "DAXKiller_IX.D.DAX.IFMM.IP") (e/balance {::e/name "hej" ::e/balance 3333}))
+  (clojure.core.async/<!! (get @(get-in system [:strategy-store :state]) "DAXKiller_IX.D.DAX.IFMM.IP"))
   @((get-in system [:auth-context :http-client]) (rest/open-order  "IX.D.DAX.IFMM.IP" "BUY" 1 "EUR"))
   @((get-in system [:auth-context :http-client]) (rest/close-order "DIAAAANL43VHHA8" "SELL" 1))
   (Double/parseDouble "2.3332")

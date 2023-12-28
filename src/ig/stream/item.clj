@@ -1,6 +1,7 @@
 (ns ig.stream.item
   (:require
-   [clojure.string :as str]))
+   [clojure.string :as str]
+   [core.events :as e]))
 
 (defn market-item
   [epic]
@@ -63,4 +64,4 @@
   [item-update]
   (let [item (.getItemName item-update)
         changed-fields (into {} (.getChangedFields item-update))]
-    (assoc changed-fields "ROUTE" item)))
+    (assoc changed-fields ::e/name (get-name item))))

@@ -16,7 +16,7 @@
   (let [id (::e/name change) ; TODO not all event have name?
         has-order? (not (nil? (get old id)))
         make-new-order (fn [x update-state?]
-                         (let [e (e/create-new-order
+                         (let [e (e/open-order
                                   id
                                   x
                                   (position-size old change))]

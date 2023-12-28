@@ -7,6 +7,25 @@ clj -X:test
 run program
 clj -m main
 
+#+NAME: Merge protfolio, account and order manager
+#+begin_src plantuml :file ./images/signalmerged.png
+title All event flows
+
+Stream->Market: CHART
+Stream->Market: MARKET
+Stream->Market: UNSUBSCRIBE
+Stream->Market: SUBSCRIBE
+Stream->Order: TRADE
+Stream->Order: ACCOUNT
+Market->Strategy1: <epic>
+Strategy1->Order: SIGNAL
+Order->CommandExecutor: MAKE-ORDER
+CommandExecutor->Order: ORDER-CREATE-FAILURE
+#+end_src
+
+#+RESULTS: Merge protfolio, account and order manager
+[[file:./images/signalmerged.png]]
+
 #+NAME: All event flows
 #+begin_src plantuml :file ./images/signal.png
 title All event flows

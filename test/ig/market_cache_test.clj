@@ -50,7 +50,7 @@
                         "ROUTE" "CHART:IX.D.DAX.IFMM.IP"})
 
 (t/deftest update-candle
-  (t/is (= [(list (e/create-mid-price-event "IX.D.DAX.IFMM.IP" 14824.2))
+  (t/is (= [(list (e/mid-price {::e/name "IX.D.DAX.IFMM.IP" ::e/price 14824.2}))
             {"IX.D.DAX.IFMM.IP"
              {"OFR_OPEN" "14826.1",
               "ROUTE" "CHART:IX.D.DAX.IFMM.IP",

@@ -9,7 +9,7 @@
   (let [account (i/get-name (get change "ROUTE"))
         balance (get change "AVAILABLE_CASH")]
     (cache/make
-     (if balance [(e/create-balance-event account balance)] [])
+     (if balance [(e/balance {::e/name account ::e/balance balance})] [])
      (update old account merge change))))
 
 (defn update-cache

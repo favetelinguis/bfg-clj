@@ -5,7 +5,8 @@
             [core.signal :as signal]
             [ig.stream.connection :as stream]
             [ig.stream.subscription :as subscription]
-            [ig.stream.item :as i]))
+            [ig.stream.item :as i]
+            [ig.cache :as cache]))
 
 (def strategies
   ;; TODO need better way to get name, want the same as is in get-name
@@ -45,8 +46,11 @@
                                 (map #(second (clojure.string/split % #"_")))
                                 (into #{}))
         setup-strategy! (fn [market]
-                          (let [c (make-strategy signal/on-update strategy market)]
-                            (swap! state assoc (str (signal/get-name strategy) "_" market) c)))]
+                          (let [key (str (signal/get-name strategy) "_" market)
+                                c (make-strategy (fn [old change] (cache/make)) {} market)]
+                            (swap! state assoc key c))
+                          #_(let [c (make-strategy signal/on-update strategy market)]
+                              (swap! state assoc (str (signal/get-name strategy) "_" market) c)))]
     (doseq [market markets]
       (setup-strategy! market)
       (when-not (contains? subscribed-markets market)
