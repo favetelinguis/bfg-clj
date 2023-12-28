@@ -9,10 +9,9 @@
             [ig.cache :as cache]))
 
 (def strategies
-  ;; TODO need better way to get name, want the same as is in get-name
-  {"DAXKiller" signal/make-dax-killer-signal
-   "DAXKiller2" signal/make-dax-killer-signal
-   "DAXKiller3" signal/make-dax-killer-signal})
+  {"DAXKiller" [signal/dax-killer {:bars 0}]
+   "DAXKiller2" [signal/make-dax-killer-signal {}]
+   "DAXKiller3" [signal/make-dax-killer-signal {}]})
 
 (defrecord StrategyStore [state application stream]
   component/Lifecycle
@@ -36,7 +35,7 @@
   markets is seq of epic names for wich to subscribe signal to"
   [store sig markets]
   (let [{:keys [connection]} (:stream store)
-        strategy ((get strategies sig))
+        [strategy-fn initial-state] (get strategies sig)
         {:keys [make-strategy send-to-app!!]} (:application store)
         {:keys [state]} store
         candle-sub (fn [m] (subscription/new-candle-subscription (i/chart-candle-1min-item m)
@@ -46,11 +45,9 @@
                                 (map #(second (clojure.string/split % #"_")))
                                 (into #{}))
         setup-strategy! (fn [market]
-                          (let [key (str (signal/get-name strategy) "_" market)
-                                c (make-strategy (fn [old change] (cache/make)) {} market)]
-                            (swap! state assoc key c))
-                          #_(let [c (make-strategy signal/on-update strategy market)]
-                              (swap! state assoc (str (signal/get-name strategy) "_" market) c)))]
+                          (let [key (str sig "_" market)
+                                c (make-strategy strategy-fn (cache/make initial-state) market)]
+                            (swap! state assoc key c)))]
     (doseq [market markets]
       (setup-strategy! market)
       (when-not (contains? subscribed-markets market)

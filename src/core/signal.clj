@@ -25,3 +25,13 @@
 
 (defn make-dax-killer-signal []
   (map->DaxKillerSignal {:num 0}))
+
+(defn dax-killer [[_ old] {:keys [::e/data]}]
+  (let [{:keys [::e/name]} data
+        {:keys [bars]} old
+        ;; TODO should only do this on new bars not each mid-price change
+        next (update old :bars inc)
+        event (if (zero? (mod bars 2))
+                [(e/signal {::e/name name ::e/direction :sell})]
+                [(e/signal {::e/name name ::e/direction :buy})])]
+    (cache/make event next)))

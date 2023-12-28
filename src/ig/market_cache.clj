@@ -38,9 +38,9 @@
                          ::e/low (calculate-mid-price "OFR_LOW" "BID_LOW")
                          ::e/open (calculate-mid-price "OFR_OPEN" "BID_OPEN")
                          ::e/close (calculate-mid-price "OFR_CLOSE" "BID_CLOSE")})
-        event (if (or mid-price-change? complete-candle?)
-                [(e/signal-update epic (merge candle-update mid-price-update))]
-                [])]
+        event (if complete-candle? #_(or mid-price-change? complete-candle?) ; TODO now we only do action on candle change to make things easier
+                  [(e/signal-update epic (merge candle-update mid-price-update))]
+                  [])]
     (cache/make event new-market-cache)))
 
 (defn remove-epic

@@ -55,10 +55,11 @@
 
 (defn- update-signal
   "Do nothing atm"
-  [events+cache change]
-  events+cache)
+  [[_ old] {:keys [::e/name ::e/direction]}]
+  (cache/make [(e/open-order {::e/name name ::e/size 1 ::e/direction direction})] old))
 
 (defn update-cache
+  "Removes the envelope event"
   [prev {:keys [::e/action ::e/data] :as event}]
   (case action
     "TRADE" (do

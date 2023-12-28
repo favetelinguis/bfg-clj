@@ -5,14 +5,6 @@
             [ig.cache :as cache]
             [core.events :as e]))
 
-(defn go-token-adder
-  [c kill-switch]
-  (a/go-loop []
-    (let [[_ trigger-chan] (a/alts! [kill-switch (a/timeout 1000)] :priority true)]
-      (when (= trigger-chan c)
-        (a/>! c :token)
-        (recur)))))
-
 (defn start-app
   "f is the command executor function
   debug-fn gets all output events in system and runs in its own thread"
@@ -64,18 +56,27 @@
      (a/sub event-topic "OPEN-ORDER" ->command-executor-chan)
 
      ;; Start services
-     (go-token-adder token-bucket-chan kill-switch)
      (go-instrument-store "Instrument store")
      (go-order-store "Order store")
 
+     ;; Token bucket adder for rate limiting
+     (a/go-loop []
+       (let [[_ trigger-chan] (a/alts! [kill-switch (a/timeout 1000)] :priority true)]
+         (when-not (= trigger-chan kill-switch)
+           (a/>! token-bucket-chan :token)
+           (recur))))
+
      ;; Command executor
      (let [failure-fn (fn [epic] (let [e (e/order-create-failure epic)]
-                                   (a/>! event-bus-> e)))]
+                                   (a/go (a/>! event-bus-> e))))]
        (a/go-loop []
-         (let [[c x] (a/alts! [kill-switch ->command-executor-chan])]
-           (when (= c ->command-executor-chan)
+         (let [[x _] (a/alts! [kill-switch ->command-executor-chan])]
+           (when x
              (a/<! token-bucket-chan) ; ratelimit, will block until we have a token
-             (f failure-fn x)
+             (try
+               (f failure-fn x)
+               (catch Throwable ex (println "Exception in Command executor Message: " (ex-message ex))))
+
              (recur)))))
 
      ;; Event source
@@ -83,7 +84,9 @@
        (loop []
          (let [[in-event _] (a/alts!! [->event-sourcing-chan kill-switch])]
            (when in-event
-             (debug-fn in-event)
+             (try
+               (debug-fn in-event)
+               (catch Throwable ex (println "Exception in event source process Message: " (ex-message ex))))
              (recur)))))
 
      ;; Return
