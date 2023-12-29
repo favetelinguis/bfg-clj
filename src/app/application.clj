@@ -17,7 +17,10 @@
             order-executor (fn [{:keys [::e/data]}]
                              (let [{:keys [::e/name ::e/size ::e/direction]} data
                                    request (rest/open-order name direction size "EUR")]
-                               (http-client request :error-callback (fn [status body] (send-to-app! (e/order-create-failure {::e/name name ::e/status-code status ::e/reason body}))))))
+                               (http-client request :error-callback (fn [status body] (send-to-app! (e/order-create-failure {::e/name name
+                                                                                                                             ::e/status-code status
+                                                                                                                             ::e/reason body
+                                                                                                                             ::e/request request}))))))
             ok (start-application order-executor event-source-fn)]
         (-> this (assoc :app-started ok)))))
   (stop [this]
