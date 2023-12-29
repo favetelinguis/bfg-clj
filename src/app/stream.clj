@@ -1,5 +1,6 @@
 (ns app.stream
   (:require [com.stuartsierra.component :as component]
+            [ig.application :refer [send-to-app!!]]
             [ig.stream.connection :as stream]
             [ig.stream.subscription :as subscription]))
 
@@ -10,7 +11,6 @@
       this
       (let [{:keys [data]} config
             {:keys [session]} auth-context
-            {:keys [send-to-app!!]} application
             account-id (:currentAccountId session)
             account-sub (subscription/new-account-subscription account-id send-to-app!!)
             trade-sub (subscription/new-trade-subscription account-id send-to-app!!)

@@ -1,5 +1,6 @@
 (ns app.strategy-store
   (:require [com.stuartsierra.component :as component]
+            [ig.application :refer [send-to-app!! make-strategy]]
             [clojure.core.async :as a]
             [clojure.string :as str]
             [core.signal :as signal]
@@ -36,7 +37,6 @@
   [store sig markets]
   (let [{:keys [connection]} (:stream store)
         [strategy-fn initial-state] (get strategies sig)
-        {:keys [make-strategy send-to-app!!]} (:application store)
         {:keys [state]} store
         candle-sub (fn [m] (subscription/new-candle-subscription (i/chart-candle-1min-item m)
                                                                  send-to-app!!))
@@ -46,8 +46,8 @@
                                 (into #{}))
         setup-strategy! (fn [market]
                           (let [key (str sig "_" market)
-                                c (make-strategy strategy-fn (cache/make initial-state) market)]
-                            (swap! state assoc key c)))]
+                                kill-fn (make-strategy strategy-fn (cache/make initial-state) market)]
+                            (swap! state assoc key kill-fn)))]
     (doseq [market markets]
       (setup-strategy! market)
       (when-not (contains? subscribed-markets market)
@@ -61,8 +61,8 @@
   [store s]
   (let [{:keys [state]} store
         {:keys [connection]} (:stream store)]
-    (when-let [c (get @state s)]
-      (a/close! c)
+    (when-let [kill-fn (get @state s)]
+      (kill-fn)
       (swap! state dissoc s)
       (let [[_ epic] (clojure.string/split s #"_")]
         (when (empty? (filter #(clojure.string/ends-with? % epic) (keys @state)))
