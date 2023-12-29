@@ -58,6 +58,7 @@
 (defn delete
   "strategy name string and market name string
   delete strategy from state and unsibscribe if it the only strategy for epic"
+  ;;TODO close all open positions if any
   [store s]
   (let [{:keys [state]} store
         {:keys [connection]} (:stream store)]

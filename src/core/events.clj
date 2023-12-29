@@ -56,4 +56,4 @@
 
 (def order-create-failure (partial make-event "ORDER-CREATE-FAILURE"))
 (s/fdef order-create-failure
-  :args (s/cat :data (s/keys :req [::name])))
+  :args (s/cat :data (s/keys :req [::name ::status-code ::reason])))

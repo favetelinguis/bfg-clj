@@ -33,7 +33,8 @@
                                           (f in-event))
                                         (catch Throwable ex (do
                                                               (println "Exception in " id " Message: " (ex-message ex))
-                                        ; TODO what more do i need to do, now I clear state, is that ok?
+                                                              ;; TODO what more do i need to do, now I clear state, is that ok?
+                                                              ;; TODO a sink will not prouce panic events, do i want that?
                                                               (cache/make [(e/panic ex)] {}))))]
              (when m
                (let [[out-events _] events+next-state]
@@ -65,6 +66,10 @@
   [event]
   (a/>!! event-bus> event))
 
+(defn send-to-app!
+  [event]
+  (a/go (a/>! event-bus> event)))
+
 (defn start-instrument-store []
   (subscribe-consumer (go-consumer "Instrument Store" market-cache/update-cache (cache/make))
                       event-topic
@@ -88,16 +93,14 @@
   (let [ig-rate-limit 30 ; 30/min can be higher for trade events
         token-bucket-chan (a/chan (a/dropping-buffer ig-rate-limit))
         executor-fn (fn [>in]
-                      (let [failure-fn (fn [epic] (let [e (e/order-create-failure epic)]
-                                                    (a/go (a/>! event-bus> e))))]
-                        (a/go-loop []
-                          (let [[x _] (a/alts! [kill-switch >in])]
-                            (when x
-                              (a/<! token-bucket-chan) ; ratelimit, will block until we have a token
-                              (try
-                                (f failure-fn x)
-                                (catch Throwable ex (println "Exception in Command executor Message: " (ex-message ex))))
-                              (recur))))))]
+                      (a/go-loop []
+                        (let [[x _] (a/alts! [kill-switch >in])]
+                          (when x
+                            (a/<! token-bucket-chan) ; ratelimit, will block until we have a token
+                            (try
+                              (f x)
+                              (catch Throwable ex (println "Exception in Command executor Message: " (ex-message ex))))
+                            (recur)))))]
     ;; start token added which is used as a rate limiter for order executor
     (a/go-loop []
       (let [[_ trigger-chan] (a/alts! [kill-switch (a/timeout 1000)] :priority true)]
@@ -114,6 +117,6 @@
   [order-executor-fn event-source-fn]
   (start-instrument-store)
   (start-order-store)
-  (start-event-source event-source-fn)
   (start-order-executor order-executor-fn)
+  (start-event-source event-source-fn)
   :ok)

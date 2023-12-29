@@ -32,6 +32,6 @@
         ;; TODO should only do this on new bars not each mid-price change
         next (update old :bars inc)
         event (if (zero? (mod bars 2))
-                [(e/signal {::e/name name ::e/direction :sell})]
-                [(e/signal {::e/name name ::e/direction :buy})])]
+                [(e/signal {::e/name name ::e/direction "SELL"})]
+                [(e/signal {::e/name name ::e/direction "BUY"})])]
     (cache/make event next)))
