@@ -19,46 +19,26 @@ Stream->Order: TRADE
 Stream->Order: ACCOUNT
 Market->Strategy1: <epic>
 Strategy1->Order: SIGNAL
-Order->CommandExecutor: MAKE-ORDER
-CommandExecutor->Order: ORDER-CREATE-FAILURE
+Order->CommandExecutor: UPDATE-ORDER
+CommandExecutor->Order: ORDER-FAILURE
 #+end_src
 
 #+RESULTS: Merge protfolio, account and order manager
 [[file:./images/signalmerged.png]]
 
-#+NAME: All event flows
-#+begin_src plantuml :file ./images/signal.png
-title All event flows
-
-Stream->Market: ROUTE :CHART:id
-Stream->Market: ROUTE :MARKET:id
-Stream->Market: ROUTE :UNSUBSCRIBE:CHART:id
-Stream->Market: ROUTE :UNSUBSCRIBE:MARKET:id
-Stream->Order: ROUTE :TRADE:id
-Stream->Account: ROUTE :ACCOUNT:id
-Market->Strategy1: ::e/name
-Strategy1->Portfolio ::e/signal
-Account->Portfolio ::e/balance
-Portfolio->Order ::e/make-order
-Order->CommandExecutor ::e/make-order
-CommandExecutor->Order ::e/exit
-Order->Portfolio ::e/exit
-Order->Portfolio ::e/filled
-#+end_src
-
-#+RESULTS: All event flows
-[[file:./images/signal.png]]
 
 #+NAME: Order open to close flow
 #+begin_src plantuml :file ./images/order.png
 title Order open to exit flow
 
-[*] --> OrderInitiated : ::e/order-new
+[*] --> :order_open_initiated : SIGNAL
 state c <<choice>>
-OrderInitiated --> c
-c --> OrderFilled : ::e/filled
-c --> [*] : ::e/exit
-OrderFilled --> [*] : ::e/exit
+:order_open_initiated --> c
+c --> :order_success : CONFIRMS|ACCEPTED
+c --> :order_failure : ORDER-FAILURE
+c --> :order_failure : CONFIRMS|REJECTED
+:order_success --> :order_filled : OPU|FILLED
+:order_success --> [*] : ::e/exit
 #+end_src
 
 #+RESULTS: Order open to close flow

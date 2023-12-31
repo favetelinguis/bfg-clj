@@ -74,17 +74,19 @@
   (subscribe-consumer (go-consumer "Instrument Store" market-cache/update-cache (cache/make))
                       event-topic
                       "CHART"
-                      "MARKET"
                       "UNSUBSCRIBE"
                       "SUBSCRIBE"))
 
 (defn start-order-store []
   (subscribe-consumer (go-consumer "Order Store" order-cache/update-cache (cache/make))
                       event-topic
+                      "MARKET"
+                      "SUBSCRIBE"
+                      "UNSUBSCRIBE"
                       "TRADE"
                       "ACCOUNT"
                       "SIGNAL"
-                      "ORDER-CREATE-FAILURE"))
+                      "ORDER-FAILURE"))
 
 (defn start-event-source [f]
   ((go-consumer "Event source" f) >event-source))
@@ -111,7 +113,7 @@
     ;; start order executor
     (subscribe-consumer executor-fn
                         event-topic
-                        "OPEN-ORDER")))
+                        "UPDATE-ORDER")))
 
 (defn start-application
   [order-executor-fn event-source-fn]

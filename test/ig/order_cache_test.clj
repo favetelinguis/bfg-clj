@@ -2,7 +2,11 @@
   (:require [ig.order-cache :as sut]
             [clojure.test :as t]
             [ig.cache :as cache]
-            [core.events :as e]))
+            [core.events :as e]
+            [clojure.spec.test.alpha :as stest]
+            [clojure.set :as set]))
+
+(stest/instrument)
 
 ;; Accept 3x trade events
 ;; CONFIRMS OPU WOU
@@ -100,50 +104,109 @@
    :dealId "DIAAAANL43VHHA8"
    :direction "BUY"})
 
-(t/deftest create-first-order-propegate-order-event
-  (let [e (e/create-new-order "dax" "SELL" 3)]
-    (t/is (= (cache/make [e] {"dax" :order-initiated})
-             (sut/update-cache (cache/make) e)))))
+;; (t/deftest create-first-order-propegate-order-event
+;;   (let [e (e/create-new-order "dax" "SELL" 3)]
+;;     (t/is (= (cache/make [e] {"dax" :order-initiated})
+;;              (sut/update-cache (cache/make) e)))))
 
-(t/deftest create-order-when-already-open-does-nothing
-  (let [initial {"dax" :order-initiated}]
-    (t/is (= (cache/make initial)
-             (sut/update-cache (cache/make initial)
-                               (e/create-new-order "dax" "BUY" 333))))))
+;; (t/deftest create-order-when-already-open-does-nothing
+;;   (let [initial {"dax" :order-initiated}]
+;;     (t/is (= (cache/make initial)
+;;              (sut/update-cache (cache/make initial)
+;;                                (e/create-new-order "dax" "BUY" 333))))))
 
-(t/deftest delete-order-non-exist
-  (let [e (e/exit "dax")]
-    (t/is (= (cache/make)
-             (sut/update-cache (cache/make) e)))))
+;; (t/deftest delete-order-non-exist
+;;   (let [e (e/exit "dax")]
+;;     (t/is (= (cache/make)
+;;              (sut/update-cache (cache/make) e)))))
 
-(t/deftest delete-order-when-exist
-  (let [initial {"dax" :order-initiated}
-        e (e/exit "dax")]
-    (t/is (= (cache/make [e] {})
-             (sut/update-cache (cache/make initial)
-                               e)))))
+;; (t/deftest delete-order-when-exist
+;;   (let [initial {"dax" :order-initiated}
+;;         e (e/exit "dax")]
+;;     (t/is (= (cache/make [e] {})
+;;              (sut/update-cache (cache/make initial)
+;;                                e)))))
 
-(t/deftest failure-open-order-remove-existing-and-signal-failure
-  (let [initial {"IX.D.DAX.IFMM.IP" :order-initiated}]
-    (t/is (= (cache/make [(e/exit "IX.D.DAX.IFMM.IP")] {})
-             (sut/update-confirms (cache/make initial)
-                                  rejected-confirms-order)))))
+;; (t/deftest failure-open-order-remove-existing-and-signal-failure
+;;   (let [initial {"IX.D.DAX.IFMM.IP" :order-initiated}]
+;;     (t/is (= (cache/make [(e/exit "IX.D.DAX.IFMM.IP")] {})
+;;              (sut/update-confirms (cache/make initial)
+;;                                   rejected-confirms-order)))))
 
-(t/deftest failure-open-order-not-existing
-  (let [initial {"OTHER_EPIC" :order-initiated}]
-    (t/is (= (cache/make initial)
-             (sut/update-confirms (cache/make initial)
-                                  rejected-confirms-order)))))
+;; (t/deftest failure-open-order-not-existing
+;;   (let [initial {"OTHER_EPIC" :order-initiated}]
+;;     (t/is (= (cache/make initial)
+;;              (sut/update-confirms (cache/make initial)
+;;                                   rejected-confirms-order)))))
 
-(t/deftest success-open-order-update-status-cache
-  (let [initial {"IX.D.DAX.IFMM.IP" :order-initiated}
-        after-update {"IX.D.DAX.IFMM.IP" :order-confirmed}]
-    (t/is (= (cache/make [] after-update)
-             (sut/update-confirms (cache/make initial)
-                                  accepted-confirms-order)))))
+;; (t/deftest success-open-order-update-status-cache
+;;   (let [initial {"IX.D.DAX.IFMM.IP" :order-initiated}
+;;         after-update {"IX.D.DAX.IFMM.IP" :order-confirmed}]
+;;     (t/is (= (cache/make [] after-update)
+;;              (sut/update-confirms (cache/make initial)
+;;                                   accepted-confirms-order)))))
 
-(t/deftest success-open-not-existing-order-do-nothing
-  (let [initial {"OTHER_EPIC" :order-initiated}]
-    (t/is (= (cache/make [] initial)
-             (sut/update-confirms (cache/make initial)
-                                  accepted-confirms-order)))))
+;; (t/deftest success-open-not-existing-order-do-nothing
+;;   (let [initial {"OTHER_EPIC" :order-initiated}]
+;;     (t/is (= (cache/make [] initial)
+;;              (sut/update-confirms (cache/make initial)
+;;                                   accepted-confirms-order)))))
+
+(t/deftest ACCOUNT-event
+  (let [start (cache/make {"SOME" {:d 1}})]
+    (t/is (= (cache/combine start (cache/make {::e/balance 99701.17}))
+             (sut/update-cache start
+                               (e/signal-update "ACCOUNT" {::e/name "Z53ZLW"
+                                                           "AVAILABLE_CASH" "99701.17"})))
+          "add balance to cache")
+    (t/is (= start
+             (sut/update-cache start
+                               (e/signal-update "ACCOUNT" {::e/name "Z53ZLW"
+                                                           "AVAILABLE_CASH" "AA99701.17"})))
+          "non numeric balance")
+
+    (t/is (= start
+             (sut/update-cache start
+                               (e/signal-update "ACCOUNT" {::e/name "Z53ZLW"
+                                                           "WRONG" "99701.17"})))
+          "incorrect key")))
+
+(t/deftest SIGNAl-event
+  (let [start {"dax" (sut/make-entry :order_close_initiated
+                                     (e/signal {::e/name "dax" ::e/direction "BUY"}))}
+        event (e/signal {::e/name "dax" ::e/direction "SELL"})
+        [events new] (sut/update-cache (cache/make start) event)]
+    (t/is (= 0 (count events)))
+    (t/is (= 1 (count (keys new)))))
+  (let [start {"dax" (sut/make-entry :order_initiated
+                                     (e/signal {::e/name "dax" ::e/direction "BUY"}))}
+        event (e/signal {::e/name "dax" ::e/direction "SELL"})
+        [events new] (sut/update-cache (cache/make start) event)]
+    (t/is (= 1 (count events)))
+    (t/is (= 1 (count (keys new)))))
+  (let [start {"dax" (sut/make-entry :order_initiated
+                                     (e/signal {::e/name "dax" ::e/direction "BUY"}))}
+        event (e/signal {::e/name "dax" ::e/direction "BUY"})
+        [events new] (sut/update-cache (cache/make start) event)]
+    (t/is (= 0 (count events)))
+    (t/is (= 1 (count (keys new)))))
+  (let [start {"omx" (sut/make-entry :order_initiated
+                                     (e/signal {::e/name "omx" ::e/direction "BUY"}))}
+        event (e/signal {::e/name "dax" ::e/direction "BUY"})
+        [events new] (sut/update-cache (cache/make start) event)]
+    (t/is (= 1 (count events)))
+    (t/is (= 2 (count (keys new))))))
+
+(t/deftest UPDATE-ORDER--event
+  (let [start {"dax" (sut/make-entry :order_close_initiated
+                                     (e/signal {::e/name "dax" ::e/direction "BUY"}))}
+        event (e/order-failure {::e/name "dax"})
+        [events new] (sut/update-cache (cache/make start) event)]
+    (t/is (= 1 (count events)))
+    (t/is (sut/order-failure? new "dax"))))
+
+;; TODO
+;; No Update-order event if market is closed
+;; #:core.events{:id #uuid "0535653e-b409-4646-9c9c-d93962fe36f0", :action "MARKET", :data {"MARKET_DELAY" "0", "MARKET_STATE" "EDIT", :core.events/name "IX.D.DAX.IFMM.IP"}, :timestamp #object[java.time.Instant 0x
+;;
+;; Do the change-order-state fns work?

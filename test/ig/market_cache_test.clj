@@ -2,8 +2,11 @@
   (:require [ig.market-cache :as sut]
             [clojure.test :as t]
             [core.events :as e]
-            [ig.cache :as cache])
+            [ig.cache :as cache]
+            [clojure.spec.test.alpha :as stest])
   (:import [java.time Instant]))
+
+(stest/instrument)
 
 (t/deftest update-market-status
   (t/is (= (cache/make {"dax" {"ROUTE" "MARKET:dax"}})
@@ -97,3 +100,4 @@
            (sut/remove-epic (cache/make {"dax" {"ROUTE" "UNSUBSCRIBE:MARKET:dax"}
                                          "omx" {"ROUTE" "UNSUBSCRIBE:MARKET:omx"}})
                             {"ROUTE" "UNSUBSCRIBE:MARKET:omx"}))))
+

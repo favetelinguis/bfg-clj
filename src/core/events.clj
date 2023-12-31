@@ -11,8 +11,8 @@
                   "CHART"
                   "BALANCE"
                   "SIGNAL"
-                  "ORDER-CREATE-FAILURE"
-                  "OPEN-ORDER"})
+                  "ORDER-FAILURE"
+                  "UPDATE-ORDER"})
 
 (defn make-event
   [action data]
@@ -23,7 +23,7 @@
 
 (def panic (partial make-event "PANIC"))
 (s/fdef panic
-  :args (s/cat :data (s/keys :req [])))
+  :args (s/cat :data (s/keys :req [::reason])))
 
 (def unsubscribe (partial make-event "UNSUBSCRIBE"))
 (s/fdef unsubscribe
@@ -42,6 +42,7 @@
   :args (s/cat :data (s/keys :req [::name ::balance])))
 
 (def signal-update make-event)
+(s/def ::direction #{"BUY" "SELL"})
 (s/fdef signal-update
   :args (s/cat :route string? :data (s/keys :req [::name]
                                             :opt [::time ::high ::low ::open ::close ::mid-price])))
@@ -50,10 +51,10 @@
 (s/fdef signal
   :args (s/cat :data (s/keys :req [::name ::direction])))
 
-(def open-order (partial make-event "OPEN-ORDER"))
-(s/fdef open-order
+(def update-order (partial make-event "UPDATE-ORDER"))
+(s/fdef update-order
   :args (s/cat :data (s/keys :req [::name ::size ::direction])))
 
-(def order-create-failure (partial make-event "ORDER-CREATE-FAILURE"))
-(s/fdef order-create-failure
+(def order-failure (partial make-event "ORDER-FAILURE"))
+(s/fdef order-failure
   :args (s/cat :data (s/keys :req [::name ::status-code ::reason ::request])))

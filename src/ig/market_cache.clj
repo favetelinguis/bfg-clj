@@ -7,13 +7,6 @@
 ;; This cache is part of the stateful transducers it must have the function signature
 ;; (fn [old-cache event] [[::e/events to propagate] updated-cache])
 
-(defn update-status
-  "This never produce events, it only provide metadata about the market, should be used
-  to check if data is delayed etc"
-  [[_ market-cache] change]
-  (let [epic (::e/name change)]
-    (cache/make (update market-cache epic merge change))))
-
 (defn update-candle
   "If bid/offer_close changes send out new MidPrice event
   If cons_end = 1 send out new candle"
@@ -51,7 +44,6 @@
 (defn update-cache
   [prev {:keys [::e/action ::e/data] :as event}]
   (case action
-    "MARKET" (update-status prev data)
     "CHART" (update-candle prev data)
     "UNSUBSCRIBE" (remove-epic prev data)
     ;; "SUBSCRIBE" (update-status prev data)
